@@ -141,19 +141,47 @@ svg { display: block; max-width: 100%; }
   letter-spacing: -.01em;
 }
 
-.brand__mark {
-  width: 19px;
-  height: 19px;
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 2px;
-  padding: 3px;
-  background: var(--ink);
-  border-radius: 5px;
+.brand__icon {
+  width: 24px;
+  height: 24px;
+  flex: 0 0 auto;
+  overflow: visible;
 }
-.brand__mark i { display: block; border-radius: 1px; background: var(--bg); }
-.brand__mark i:nth-child(2) { background: var(--warm); }
-.brand__mark i:nth-child(3) { background: var(--accent); }
+
+.brand__frame {
+  fill: var(--surface);
+  stroke: var(--ink);
+  stroke-width: 1.9;
+}
+
+.brand__orbit {
+  stroke: var(--ink);
+  stroke-width: 1.55;
+  stroke-linecap: round;
+  opacity: .72;
+}
+
+.brand__core {
+  fill: color-mix(in srgb, var(--accent) 12%, var(--surface));
+  stroke: var(--ink);
+  stroke-width: 1.65;
+  stroke-linejoin: round;
+}
+
+.brand__axis {
+  fill: none;
+  stroke: color-mix(in srgb, var(--ink) 56%, transparent);
+  stroke-width: .95;
+  stroke-linecap: round;
+}
+
+.brand__node {
+  stroke: var(--ink);
+  stroke-width: 1.25;
+}
+
+.brand__node--cool { fill: var(--accent); }
+.brand__node--warm { fill: var(--warm); }
 
 .nav {
   margin-left: auto;
