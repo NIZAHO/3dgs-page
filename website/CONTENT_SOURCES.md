@@ -8,7 +8,7 @@ All paths below are in NIZAHO/3dgs and may require repository access.
 
 - `README.md`: stage architecture and input contracts. Retrieved from main.
 - `docs/stages/stage9.md`: native SH0 profile, paired RGB/LiDAR updates, maintenance, learned image corrections, checkpoint limitations. Retrieved from main.
-- `docs/stages/stage10.md`: LCY/PLY, SOG, coordinate transforms, CPU compression versus GPU viewing, publishing boundaries. Source blob: `753c9b80e8ac0637d9c1d5e2d905c502a338c6c3`.
+- `docs/stages/stage10.md`: PLY, SOG, coordinate transforms, CPU compression versus GPU viewing, publishing boundaries. Source blob: `753c9b80e8ac0637d9c1d5e2d905c502a338c6c3`.
 - `experiments/pipelines/20261002_133957_fresh/README.md`: ALL metrics and counts in the page. Source blob: `3eb0bfe5005d10da24a91618c30ef30af396cb35`.
 - `src/gs/native/PROVENANCE.json`: upstream attribution. Source blob: `8139633930dad28768d2e18d3a3b1cc4ba63ad7c`. The native backend imports `yqx674834119/3dgs_CUDA`, Linux commit `39578a089474b4342a050023b5f068a84bf06ee9`.
 
@@ -27,7 +27,7 @@ The training tabs are an explanatory lifecycle, not executable training or measu
 
 ## Scene availability
 
-The full-run record says its Stage 10 public/browser files were cleaned. No real scene asset is present on this page. A future viewer must point to a newly provided, authorized Stage 10 public export and should load only after a deliberate user action. Never substitute a synthetic graphic for a real result without labeling it.
+The full-run record says its Stage 10 public/browser files were cleaned. The project page now includes a self-hosted SuperSplat 1.37.0 viewer, with an explicitly maintained examples/scenes.json list. The list is initially empty. Local PLY previews are never uploaded. PLY is the default model format; bundled SOG is optional. The renderer loads only after a deliberate action. CI uses a tiny synthetic PLY only as a smoke-test fixture, not as a public reconstruction or quality result. Official runtime licensing is deployed with the viewer.
 
 ## Design reference
 

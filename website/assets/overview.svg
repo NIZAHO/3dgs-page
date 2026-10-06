@@ -1,6 +1,6 @@
 <svg xmlns="http://www.w3.org/2000/svg" width="1440" height="570" viewBox="0 0 1440 570" role="img" aria-labelledby="title desc">
 <title id="title">3dgs: panoramic observations to a browser-ready Gaussian scene</title>
-<desc id="desc">Method illustration, not an experimental rendering. Dual-fisheye images and LiDAR feed compact data preparation. The native SH0 CUDA trainer initializes Gaussians from sparse points and sampled LiDAR, performs paired RGB and LiDAR updates, and prunes and densifies the scene. Main and environment Gaussians are exported as PLY-encoded LCY, compressed to SOG, and displayed in SuperSplat. Per-image corrections stay in the checkpoint.</desc>
+<desc id="desc">Method illustration, not an experimental rendering. Dual-fisheye images and LiDAR feed compact data preparation. The native SH0 CUDA trainer initializes Gaussians from sparse points and sampled LiDAR, performs paired RGB and LiDAR updates, and prunes and densifies the scene. Main and environment Gaussians are exported as PLY-encoded PLY, compressed to SOG, and displayed in SuperSplat. Per-image corrections stay in the checkpoint.</desc>
 <defs>
  <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="m1 1 6 3-6 3" fill="none" stroke="#787c82" stroke-width="1.2"/></marker>
  <marker id="blueArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="m1 1 6 3-6 3" fill="none" stroke="#3478bb" stroke-width="1.2"/></marker>
@@ -58,7 +58,7 @@
  <rect x="1171" y="110" width="231" height="365" rx="12" fill="#f7f7f5" stroke="#e5e5df"/>
  <rect x="1192" y="145" width="189" height="62" rx="7" fill="#fff" stroke="#d7d9d8"/>
  <text x="1286" y="171" text-anchor="middle" font-size="14" font-weight="600">Main + environment</text>
- <text x="1286" y="192" text-anchor="middle" font-size="12" fill="#737b82">LCY / PLY → SOG</text>
+ <text x="1286" y="192" text-anchor="middle" font-size="12" fill="#737b82">PLY → SOG</text>
  <path d="M1286 211v30" stroke="#787c82" stroke-width="1.4" marker-end="url(#arrow)"/>
  <rect x="1192" y="253" width="189" height="125" rx="7" fill="#fff" stroke="#b8c5d0"/>
  <path d="M1192 273h189" stroke="#d1d8de"/>
