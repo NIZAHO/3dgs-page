@@ -1,73 +1,34 @@
-name: PLY viewer integration and smoke test
+name: Gaussian PLY viewer checks
 on:
   push:
-    branches: [ply-scene-viewer]
+    branches: [main, ply-scene-viewer]
+    paths: ['website/**', 'scripts/**', 'package*.json', '.github/workflows/viewer-smoke.yml']
+  pull_request:
+    paths: ['website/**', 'scripts/**', 'package*.json']
   workflow_dispatch:
 permissions:
-  contents: write
+  contents: read
 jobs:
   verify:
     runs-on: ubuntu-latest
     timeout-minutes: 15
     steps:
       - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
       - uses: actions/setup-node@v4
         with:
           node-version: '22'
-      - name: Apply scoped page migration
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build self-hosted runtime
         run: |
-          python - <<'PY'
-          from pathlib import Path
-          import re
-          for p in Path('website').rglob('*'):
-              if p.is_symlink() or not p.is_file(): continue
-              try: old=p.read_text()
-              except (UnicodeError,OSError): continue
-              new=re.sub('lcy',lambda m:'PLY' if m[0].isupper() else 'ply',old,flags=re.I)
-              new=new.replace('PLY/PLY','PLY').replace('PLY / PLY','PLY')
-              if p.as_posix()=='website/index.html':
-                  new=new.replace('<span id="explore" class="anchor-alias"></span>','')
-                  new=new.replace('In this project, PLY is standard little-endian PLY encoding.','The native model uses standard little-endian Gaussian PLY, which can also be opened directly in the embedded viewer.')
-                  new=new.replace('04 / Browser delivery','05 / Browser delivery').replace('05 / Implementation &amp; sources','06 / Implementation &amp; sources')
-                  new=re.sub(r'<div class="scene-status">.*?</div></div>','',new,flags=re.S)
-                  if 'id="scene-browser"' not in new:
-                      marker='<section class="chapter" id="delivery">'
-                      assert marker in new
-                      new=new.replace(marker,Path('website/partials/viewer-section.html').read_text()+'\n'+marker)
-                  if 'href="#explore">Examples' not in new:
-                      new=new.replace('<a href="#evidence">Evidence</a>','<a href="#explore">Examples</a><a href="#evidence">Evidence</a>')
-                  if 'Browse examples' not in new:
-                      new=new.replace('<a class="btn" href="#evidence">Recorded results</a>','<a class="btn" href="#explore">Browse examples</a><a class="btn" href="#evidence">Recorded results</a>')
-                  if 'scene-browser.css' not in new: new=new.replace('</head>','<link rel="stylesheet" href="./scene-browser.css?v=ply-viewer-1">\n</head>')
-                  if 'scene-browser.js' not in new: new=new.replace('</body>','<script type="module" src="./scene-browser.js?v=ply-viewer-1"></script>\n</body>')
-              if p.as_posix()=='website/CONTENT_SOURCES.md':
-                  start=new.find('## Scene availability')
-                  end=new.find('## Design reference',start)
-                  assert start>=0 and end>start
-                  new=new[:start]+'## Scene availability\n\nThe full-run record says its Stage 10 public/browser files were cleaned. The project page now includes a self-hosted SuperSplat 1.37.0 viewer, with an explicitly maintained examples/scenes.json list. The list is initially empty. Local PLY previews are never uploaded. PLY is the default model format; bundled SOG is optional. The renderer loads only after a deliberate action. CI uses a tiny synthetic PLY only as a smoke-test fixture, not as a public reconstruction or quality result. Official runtime licensing is deployed with the viewer.\n\n'+new[end:]
-              if new!=old:p.write_text(new)
-          print('Page content, overview SVG, training text and source notes use PLY naming.')
-          PY
-      - name: Lock and build the renderer
-        run: |
-          npm install --ignore-scripts
           npm run build
           node --check website/scene-browser.js
           node --check website/viewer/viewer.js
-      - name: Install browser for smoke tests
-        run: npx playwright install --with-deps chromium
-      - name: Verify real PLY loading and empty-state behavior
+      - run: npx playwright install --with-deps chromium
+      - name: Test PLY rendering, examples and error handling
         run: npm test
-      - name: Commit only tested source migration and lockfile
-        run: |
-          git diff --check
-          git config user.name 'github-actions[bot]'
-          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add website/index.html website/app.js website/assets/overview.svg website/CONTENT_SOURCES.md package-lock.json
-          if ! git diff --cached --quiet; then
-            git commit -m 'Finalize PLY-first page and tested embedded example viewer'
-            git push origin HEAD:ply-scene-viewer
-          fi
       - uses: actions/upload-artifact@v4
         if: always()
         with:

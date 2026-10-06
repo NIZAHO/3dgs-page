@@ -22,6 +22,8 @@ page.on('console',msg=>{if(msg.type()==='error')console.log('BROWSER',msg.text()
 page.on('pageerror',error=>console.log('PAGEERROR',error.message));
 const settle=async(expected)=>{await page.waitForFunction(()=>['loaded','error'].includes(document.getElementById('scene-status').dataset.state),null,{timeout:90000});assert.equal(await page.locator('#scene-status').getAttribute('data-state'),expected,await page.locator('#scene-status').innerText());};
 try{
+  // Isolate smoke fixtures from the owner's real manifest. Restore in finally.
+  await writeFile(root+'/examples/scenes.json',JSON.stringify({version:1,scenes:[]}));
   await page.goto(base+'/#explore');
   await page.waitForFunction(()=>document.getElementById('scene-select').textContent.includes('No public examples'));
   assert.equal(await page.locator('#scene-frame-slot iframe').count(),0);

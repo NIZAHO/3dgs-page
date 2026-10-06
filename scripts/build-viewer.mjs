@@ -1,4 +1,4 @@
-import {cp, mkdir, readFile, rm, writeFile} from 'node:fs/promises';
+import {cp, mkdir, readFile, rm, writeFile, stat} from 'node:fs/promises';
 import {join, resolve} from 'node:path';
 import {js, css} from '@playcanvas/supersplat-viewer';
 const root=process.cwd();
@@ -17,7 +17,17 @@ for(const scene of manifest.scenes){
   if(!/^[a-z]+:/i.test(scene.url)&&!scene.url.startsWith('//')){
     const local=resolve(source,scene.url.replace(/^\.\//,''));
     if(!local.startsWith(source+'/')) throw new Error('Example escapes the website directory');
-    await readFile(local); // Fail the build rather than publishing a broken local example.
+    const info=await stat(local);
+    if(!info.isFile()) throw new Error('Example is not a file: '+scene.url);
+  }
+  if(scene.settings){
+    const settingsUrl=new URL(scene.settings,'https://nizaho.github.io/3dgs-page/');
+    if(settingsUrl.protocol!=='https:'||settingsUrl.username||settingsUrl.password) throw new Error('Use HTTPS settings URLs');
+    if(!/^[a-z]+:/i.test(scene.settings)&&!scene.settings.startsWith('//')){
+      const local=resolve(source,scene.settings.replace(/^\.\//,''));
+      if(!local.startsWith(source+'/')) throw new Error('Settings escape the website directory');
+      JSON.parse(await readFile(local,'utf8'));
+    }
   }
 }
 await rm(out,{recursive:true,force:true});
