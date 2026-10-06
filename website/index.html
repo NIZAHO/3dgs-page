@@ -1,268 +1,57 @@
 <!doctype html>
 <html lang="en">
 <head>
-  <meta charset="utf-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1">
-  <title>Chuan — Project Page</title>
-  <meta name="description" content="Chuan project page — SLAM and panoramic 3D Gaussian Splatting.">
-  <meta name="color-scheme" content="light dark">
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=JetBrains+Mono:wght@400;500&family=Source+Serif+4:opsz,wght@8..60,400;8..60,600&display=swap" rel="stylesheet">
-  <link rel="stylesheet" href="./styles.css">
-  <script>
-    try {
-      const t = localStorage.getItem("chuan-theme");
-      if (t === "light" || t === "dark") document.documentElement.dataset.theme = t;
-    } catch (_) {}
-  </script>
+<meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>3dgs — LiDAR-guided Gaussian scenes</title>
+<meta name="description" content="The Chuan 3dgs project: calibrated panoramic observations, paired RGB and LiDAR supervision, native CUDA SH0 Gaussian training, and SOG browser delivery.">
+<meta name="color-scheme" content="light dark"><meta name="theme-color" content="#ffffff">
+<link rel="canonical" href="https://nizaho.github.io/3dgs-page/">
+<meta property="og:title" content="3dgs — From panoramic capture to Gaussian scenes"><meta property="og:description" content="An illustrated guide to the Chuan project's Gaussian representation, paired RGB / LiDAR training, and browser delivery."><meta property="og:type" content="website">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./styles.css?v=gs-story-1">
+<script>try{let t=localStorage.getItem('chuan-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 </head>
 <body>
-  <a class="skip-link" href="#main">Skip to content</a>
-
-  <header class="topbar">
-    <div class="topbar__inner">
-      <a class="brand" href="#top" aria-label="3dgs, back to top">
-        <svg class="brand__icon" viewBox="0 0 32 32" aria-hidden="true">
-          <rect class="brand__frame" x="1.5" y="1.5" width="29" height="29" rx="8"/>
-          <g class="brand__orbit" fill="none">
-            <path d="M16 5.5v5"/>
-            <path d="M16 21.5v5"/>
-            <path d="M5.5 16h5"/>
-            <path d="M21.5 16h5"/>
-          </g>
-          <path class="brand__core" d="M16 9.25 21.5 12.38v7.24L16 22.75l-5.5-3.13v-7.24L16 9.25Z"/>
-          <path class="brand__axis" d="M16 9.25v13.5M10.5 12.38l11 7.24M21.5 12.38l-11 7.24"/>
-          <g class="brand__nodes">
-            <circle class="brand__node brand__node--cool" cx="16" cy="5.5" r="2.35"/>
-            <circle class="brand__node brand__node--warm" cx="26.5" cy="16" r="2.35"/>
-            <circle class="brand__node brand__node--cool" cx="16" cy="26.5" r="2.35"/>
-            <circle class="brand__node brand__node--warm" cx="5.5" cy="16" r="2.35"/>
-          </g>
-        </svg>
-        <span>3dgs</span>
-      </a>
-
-      <nav class="nav" aria-label="Project navigation">
-        <a href="#overview">Overview</a>
-        <a href="#pipeline">Pipeline</a>
-        <a href="#explore">Explore</a>
-        <a href="#evaluation">Evaluation</a>
-        <a href="#resources">Resources</a>
-      </nav>
-
-      <div class="topbar__actions">
-        <button class="icon-btn" id="theme-toggle" type="button" aria-label="Toggle theme" title="Toggle theme">
-          <svg class="moon" viewBox="0 0 24 24" aria-hidden="true"><path d="M20 14.2A8 8 0 0 1 9.8 4a8 8 0 1 0 10.2 10.2Z"/></svg>
-          <svg class="sun" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2.5v2M12 19.5v2M2.5 12h2M19.5 12h2M5.3 5.3l1.4 1.4M17.3 17.3l1.4 1.4M5.3 18.7l1.4-1.4M17.3 6.7l1.4-1.4"/></svg>
-        </button>
-        <a class="icon-btn" href="https://github.com/NIZAHO/3dgs" aria-label="GitHub repository" title="GitHub">
-          <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 2.5a9.5 9.5 0 0 0-3 18.5c.5.1.7-.2.7-.5v-1.8c-2.8.6-3.4-1.2-3.4-1.2-.5-1.1-1.1-1.4-1.1-1.4-.9-.6.1-.6.1-.6 1 0 1.5 1 1.5 1 .9 1.5 2.3 1.1 2.9.8.1-.6.4-1.1.7-1.3-2.2-.3-4.6-1.1-4.6-4.7 0-1 .4-1.9 1-2.6-.1-.3-.4-1.3.1-2.6 0 0 .8-.3 2.6 1a9 9 0 0 1 4.8 0c1.8-1.2 2.6-1 2.6-1 .5 1.3.2 2.3.1 2.6.7.7 1 1.6 1 2.6 0 3.6-2.4 4.4-4.6 4.7.4.3.7.9.7 1.7v2.6c0 .3.2.6.7.5A9.5 9.5 0 0 0 12 2.5Z"/></svg>
-        </a>
-      </div>
-    </div>
-  </header>
-
-  <main id="main">
-    <section class="hero" id="top">
-      <p class="eyebrow">SLAM · 3D Gaussian Splatting · Web Visualization</p>
-      <h1>Chuan</h1>
-      <p class="hero__lead">[One-line project statement]</p>
-      <div class="hero__actions">
-        <a class="btn btn--primary" href="#explore">Explore scene</a>
-        <a class="btn btn--ghost" href="https://github.com/NIZAHO/3dgs">Code</a>
-        <a class="btn btn--ghost" href="#resources">Documentation</a>
-      </div>
-
-      <figure class="hero-visual l-wide">
-        <div class="hero-visual__stage" aria-label="Hero visual placeholder">
-          <div class="scene-grid"></div>
-          <div class="scene-axis scene-axis--x"></div>
-          <div class="scene-axis scene-axis--y"></div>
-          <div class="scene-cloud scene-cloud--a"></div>
-          <div class="scene-cloud scene-cloud--b"></div>
-          <div class="scene-cloud scene-cloud--c"></div>
-          <span class="hero-visual__label">[Scene render / project hero visual]</span>
-        </div>
-        <figcaption>[Hero visual caption]</figcaption>
-      </figure>
-    </section>
-
-    <section class="section" id="overview">
-      <div class="section__head prose">
-        <p class="section__index">01 / Overview</p>
-        <h2>A research pipeline, presented as a visual system.</h2>
-        <p class="placeholder-copy">[Project overview placeholder]</p>
-      </div>
-
-      <div class="system-map l-mid" aria-label="System overview placeholder">
-        <article>
-          <span class="system-map__kicker">Input</span>
-          <h3>[Sensors & raw data]</h3>
-          <div class="mini-lines"><i></i><i></i><i></i></div>
-        </article>
-        <div class="system-map__arrow" aria-hidden="true">→</div>
-        <article>
-          <span class="system-map__kicker">Reconstruction</span>
-          <h3>[SLAM & geometry]</h3>
-          <div class="mini-lines"><i></i><i></i><i></i></div>
-        </article>
-        <div class="system-map__arrow" aria-hidden="true">→</div>
-        <article>
-          <span class="system-map__kicker">Output</span>
-          <h3>[3DGS & web viewer]</h3>
-          <div class="mini-lines"><i></i><i></i><i></i></div>
-        </article>
-      </div>
-    </section>
-
-    <section class="section" id="pipeline">
-      <div class="section__head prose">
-        <p class="section__index">02 / Pipeline</p>
-        <h2>From captured data to an explorable Gaussian scene.</h2>
-        <p class="placeholder-copy">[Pipeline description placeholder]</p>
-      </div>
-
-      <div class="pipeline l-wide" data-pipeline>
-        <div class="pipeline__tabs" role="tablist" aria-label="Pipeline stages">
-          <button class="pipeline__tab is-active" type="button" data-stage="0–4" role="tab" aria-selected="true">
-            <span>01</span><strong>Preprocess</strong><small>Stage 0–4</small>
-          </button>
-          <button class="pipeline__tab" type="button" data-stage="5–7" role="tab" aria-selected="false">
-            <span>02</span><strong>Reconstruct</strong><small>Stage 5–7</small>
-          </button>
-          <button class="pipeline__tab" type="button" data-stage="8" role="tab" aria-selected="false">
-            <span>03</span><strong>Prepare</strong><small>Stage 8</small>
-          </button>
-          <button class="pipeline__tab" type="button" data-stage="9" role="tab" aria-selected="false">
-            <span>04</span><strong>Train</strong><small>Stage 9</small>
-          </button>
-          <button class="pipeline__tab" type="button" data-stage="10" role="tab" aria-selected="false">
-            <span>05</span><strong>Publish</strong><small>Stage 10</small>
-          </button>
-        </div>
-
-        <div class="pipeline__canvas">
-          <div class="pipeline__diagram">
-            <span class="pipeline__badge" id="pipeline-badge">Stage 0–4</span>
-            <div class="diagram-node diagram-node--a">[Input]</div>
-            <div class="diagram-line diagram-line--a"></div>
-            <div class="diagram-node diagram-node--b">[Process]</div>
-            <div class="diagram-line diagram-line--b"></div>
-            <div class="diagram-node diagram-node--c">[Output]</div>
-          </div>
-          <aside class="pipeline__note">
-            <span class="meta-label">Selected phase</span>
-            <h3 id="pipeline-title">Preprocess</h3>
-            <p>[Phase-specific explanation placeholder]</p>
-          </aside>
-        </div>
-      </div>
-    </section>
-
-    <section class="section section--wide" id="explore">
-      <div class="section__head prose">
-        <p class="section__index">03 / Explore</p>
-        <h2>The scene should be the main visual object.</h2>
-        <p class="placeholder-copy">[Interactive viewer introduction placeholder]</p>
-      </div>
-
-      <div class="viewer l-wide">
-        <div class="viewer__toolbar">
-          <div class="viewer__dots"><i></i><i></i><i></i></div>
-          <span>Interactive 3D Viewer</span>
-          <button type="button" disabled>Fullscreen</button>
-        </div>
-        <div class="viewer__stage">
-          <div class="viewer-grid"></div>
-          <div class="viewer-orbit"></div>
-          <div class="viewer-splat viewer-splat--1"></div>
-          <div class="viewer-splat viewer-splat--2"></div>
-          <div class="viewer-splat viewer-splat--3"></div>
-          <div class="viewer__placeholder">
-            <strong>[SuperSplat / SOG viewer mount point]</strong>
-            <span>No scene content loaded in the design skeleton.</span>
-          </div>
-          <div class="viewer__hud viewer__hud--left">
-            <span>SCENE</span>
-            <strong>[dataset]</strong>
-          </div>
-          <div class="viewer__hud viewer__hud--right">
-            <span>MODE</span>
-            <strong>orbit</strong>
-          </div>
-        </div>
-        <div class="viewer__footer">
-          <span>[Scene selector]</span>
-          <span>[Camera presets]</span>
-          <span>[Render controls]</span>
-        </div>
-      </div>
-    </section>
-
-    <section class="section" id="evaluation">
-      <div class="section__head prose">
-        <p class="section__index">04 / Evaluation</p>
-        <h2>Reserve space for evidence before writing claims.</h2>
-        <p class="placeholder-copy">[Evaluation framing placeholder]</p>
-      </div>
-
-      <div class="comparison l-mid">
-        <div class="comparison__toolbar">
-          <span class="meta-label">Visual comparison</span>
-          <div class="segmented" aria-hidden="true"><i class="is-active">A/B</i><i>Slider</i><i>Zoom</i></div>
-        </div>
-        <div class="comparison__images">
-          <div><span>[Reference / baseline]</span></div>
-          <div><span>[Chuan / result]</span></div>
-        </div>
-      </div>
-
-      <div class="metric-table l-mid" aria-label="Metrics placeholder">
-        <div class="metric-table__row metric-table__head">
-          <span>Metric</span><span>Baseline</span><span>Chuan</span><span>Notes</span>
-        </div>
-        <div class="metric-table__row"><span>[metric]</span><span>—</span><span>—</span><span>[placeholder]</span></div>
-        <div class="metric-table__row"><span>[metric]</span><span>—</span><span>—</span><span>[placeholder]</span></div>
-        <div class="metric-table__row"><span>[metric]</span><span>—</span><span>—</span><span>[placeholder]</span></div>
-      </div>
-    </section>
-
-    <section class="section" id="resources">
-      <div class="section__head prose">
-        <p class="section__index">05 / Resources</p>
-        <h2>Keep the ending practical and quiet.</h2>
-        <p class="placeholder-copy">[Resource notes placeholder]</p>
-      </div>
-
-      <div class="resource-grid l-mid">
-        <a href="https://github.com/NIZAHO/3dgs">
-          <span class="resource-grid__icon">⌘</span>
-          <strong>Code</strong>
-          <small>GitHub repository</small>
-        </a>
-        <a href="#">
-          <span class="resource-grid__icon">↗</span>
-          <strong>Documentation</strong>
-          <small>[Documentation link]</small>
-        </a>
-        <a href="#">
-          <span class="resource-grid__icon">◫</span>
-          <strong>Viewer</strong>
-          <small>[Standalone viewer link]</small>
-        </a>
-      </div>
-    </section>
-  </main>
-
-  <footer class="footer">
-    <div class="footer__inner">
-      <span>Chuan</span>
-      <span class="footer__muted">Project page skeleton · <span id="year"></span></span>
-      <a href="#top">Back to top ↑</a>
-    </div>
-  </footer>
-
-  <script src="./app.js"></script>
-</body>
-</html>
+<a class="skip" href="#main">Skip to content</a>
+<header class="topbar"><div class="nav-inner">
+<a class="brand" href="#top" aria-label="3dgs, back to top">
+<svg class="brand__icon" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect class="brand__frame" x="1.5" y="1.5" width="29" height="29" rx="8"/><g class="brand__orbit" fill="none"><path d="M16 5.5v5M16 21.5v5M5.5 16h5M21.5 16h5"/></g><path class="brand__core" d="M16 9.25 21.5 12.38v7.24L16 22.75l-5.5-3.13v-7.24L16 9.25Z"/><path class="brand__axis" d="M16 9.25v13.5M10.5 12.38l11 7.24M21.5 12.38l-11 7.24"/><g class="brand__nodes"><circle class="cool" cx="16" cy="5.5" r="2.35"/><circle class="warm" cx="26.5" cy="16" r="2.35"/><circle class="cool" cx="16" cy="26.5" r="2.35"/><circle class="warm" cx="5.5" cy="16" r="2.35"/></g></svg><span>3dgs</span></a>
+<nav id="navigation" aria-label="Sections"><a href="#representation">Gaussians</a><a href="#training">Training</a><a href="#evidence">Evidence</a><a href="#delivery">Delivery</a><a href="#resources">Resources</a></nav>
+<button id="menu" class="menu-btn" aria-expanded="false" aria-controls="navigation">Contents <span aria-hidden="true">⌄</span></button>
+<button id="theme" class="icon-btn" aria-label="Switch theme" title="Switch theme"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></svg></button>
+</div><div id="progress" aria-hidden="true"></div></header>
+<main id="main">
+<section class="hero" id="top">
+<p class="eyebrow">Chuan project <span> / </span> LiDAR-guided 3D Gaussian Splatting</p>
+<h1>From panoramic capture<br>to <em>Gaussian scenes.</em></h1>
+<p class="lead">Learn appearance from images, constrain geometry with LiDAR,<br class="desktop-break"> and bring the resulting 3D scene into the browser.</p>
+<p class="byline">NIZAHO <span>·</span> Offline reconstruction system <span>·</span> Native CUDA / SH0</p>
+<div class="hero-actions"><a class="btn primary" href="#training">Explore the method <span aria-hidden="true">↓</span></a><a class="btn" href="#evidence">Recorded results</a><a class="btn" href="https://github.com/NIZAHO/3dgs">Project repository <span aria-hidden="true">↗</span></a></div>
+<figure class="overview wide" id="overview"><a class="overview-link" href="./assets/overview.svg" target="_blank" rel="noopener" aria-label="Open the full-size project overview"><img src="./assets/overview.svg" width="1440" height="570" fetchpriority="high" alt="System overview: dual-fisheye imagery and LiDAR feed preparation; paired RGB and LiDAR updates optimize a shared SH0 Gaussian scene with pruning and densification; LCY/PLY is compressed to SOG and displayed in SuperSplat."></a><figcaption><b>Figure 1.</b> The pipeline at a glance. Most of the work on this page concerns the Gaussian scene: its representation, optimization, and delivery. Original method illustration, not a reconstruction result. <a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a> <a class="figure-download" href="./assets/overview.svg" download>Download SVG ↗</a></figcaption></figure>
+</section>
+<div class="intro prose"><p class="takeaway"><span class="eyebrow">The central idea</span>A common 3D representation connects two kinds of observations: <strong class="blue">what cameras see</strong> and <strong class="orange">where surfaces are measured</strong>.</p><p>Chuan connects calibrated dual-fisheye capture and LiDAR geometry to an offline 3D Gaussian Splatting pipeline. Upstream processing prepares the views and poses; the core stage optimizes a Gaussian scene using both RGB and LiDAR updates. The resulting model is then packaged for a standard browser viewer. <a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></p></div>
+<section class="chapter" id="representation"><div class="prose"><p class="eyebrow">01 / Representation</p><h2>A scene is more than a point cloud.</h2><p>Each Gaussian carries a 3D position, scale, rotation, opacity, and color. Together, these overlapping primitives form the scene used by the renderer. The current native training profile uses <strong>SH0</strong>: the zero-order color component, rather than higher-order view-dependent spherical harmonics. <a href="#ref-1">[1]</a></p></div>
+<figure class="figure mid"><div class="figure-bar"><span>Inside a Gaussian scene</span><span class="tag">Interactive illustration</span></div><div class="representation-grid"><div class="splat-stage"><svg id="gaussian-demo" viewBox="0 0 600 360" role="img" aria-labelledby="gaussian-title"><title id="gaussian-title">Synthetic Gaussian arrangement illustrating scale and opacity, not a reconstructed dataset</title><defs><radialGradient id="demo-blue"><stop stop-color="#4b87bd" stop-opacity=".9"/><stop offset="1" stop-color="#4b87bd" stop-opacity="0"/></radialGradient><radialGradient id="demo-orange"><stop stop-color="#c68862" stop-opacity=".9"/><stop offset="1" stop-color="#c68862" stop-opacity="0"/></radialGradient></defs><g class="demo-grid" fill="none"><path d="m65 248 235-133 235 133-235 93ZM123 281l235-134M182 314l235-133M358 314 123 181M417 281 182 148"/><path d="M300 341V60" stroke-dasharray="4 5"/></g><g id="gaussian-primitives"></g><g fill="currentColor" class="axis-label"><text x="539" y="248">x</text><text x="55" y="249">y</text><text x="306" y="62">z</text></g></svg><span class="illustration-note">Synthetic arrangement · no model data</span></div><div class="controls"><h3>Small primitives.<br>A continuous visual field.</h3><p>Change the footprint and transparency to inspect how neighboring splats overlap.</p><label for="scale">Gaussian scale <output id="scale-value" for="scale">1.0×</output></label><input id="scale" type="range" min="50" max="170" value="100"><label for="opacity">Opacity <output id="opacity-value" for="opacity">0.65</output></label><input id="opacity" type="range" min="15" max="95" value="65"><button class="text-button" id="reset-gaussian" type="button">Reset illustration ↺</button><p class="fine">These controls demonstrate representation only. They do not run the project's trainer or renderer.</p></div></div><figcaption><b>Figure 2.</b> A schematic view of overlapping Gaussian primitives. Position and orientation are fixed in this illustration; the controls adjust scale and opacity.</figcaption></figure>
+</section>
+<section class="chapter" id="training"><span id="pipeline" class="anchor-alias"></span><div class="prose"><p class="eyebrow">02 / Gaussian training</p><h2>Two supervision paths.<br>One Gaussian scene.</h2><p>The native CUDA backend executes <strong>paired LiDAR and RGB updates</strong>. RGB fitting uses Huber and SSIM terms with depth/opacity regularization; the LiDAR branch rasterizes depth and evaluates its own loss. Gaussian parameters and Adam state remain GPU-resident. <a href="#ref-1">[1]</a></p></div>
+<figure class="figure wide training-figure"><div class="tabs" role="tablist" aria-label="Training lifecycle"><button id="tab-init" role="tab" aria-selected="true" aria-controls="training-panel" data-phase="init">01 <strong>Initialize</strong></button><button id="tab-fit" role="tab" aria-selected="false" aria-controls="training-panel" tabindex="-1" data-phase="fit">02 <strong>Supervise</strong></button><button id="tab-refine" role="tab" aria-selected="false" aria-controls="training-panel" tabindex="-1" data-phase="refine">03 <strong>Refine</strong></button><button id="tab-export" role="tab" aria-selected="false" aria-controls="training-panel" tabindex="-1" data-phase="export">04 <strong>Freeze &amp; export</strong></button></div>
+<div id="training-panel" role="tabpanel" aria-labelledby="tab-init" tabindex="0" data-phase="init"><div class="training-map"><div class="observation image-path"><span class="micro">Appearance observations</span><strong>RGB images</strong><small>Huber + SSIM<br>Depth / opacity regularization</small></div><span class="connector blue" aria-hidden="true">↘</span><div class="shared-scene"><span class="micro">Shared representation</span><svg viewBox="0 0 100 84" width="108" height="90" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.1"><path d="m50 6 35 20v39L50 82 15 65V26Z"/><path d="m15 26 35 20 35-20M50 46v36" stroke-dasharray="3 3"/><ellipse cx="50" cy="43" rx="28" ry="10" transform="rotate(-30 50 43)"/><ellipse cx="50" cy="43" rx="28" ry="10" transform="rotate(30 50 43)"/></g><circle cx="50" cy="43" r="4" fill="currentColor"/></svg><strong>SH0 Gaussians</strong><small>Scene + environment</small></div><span class="connector" aria-hidden="true">→</span><div class="maintenance"><span class="micro">Adaptive capacity</span><strong>Prune &amp; densify</strong><small>100-step cadence<br>Final pruning before export</small></div><div class="observation lidar-path"><span class="micro">Geometry observations</span><strong>LiDAR depth</strong><small>Depth rasterization<br>Depth loss</small></div><span class="connector orange" aria-hidden="true">↗</span><div class="initialization"><span>Initialization</span> Sparse points + sampled LAS + environment</div></div><aside class="phase-note" aria-live="polite"><span class="micro" id="phase-kicker">01 / Initialize</span><h3 id="phase-title">Start from geometry, not an empty scene.</h3><p id="phase-copy">The documented native profile seeds the scene from sparse reconstruction and sampled LiDAR, adds environment Gaussians, and uses exact 3-nearest-neighbor initialization.</p><p class="phase-detail" id="phase-detail">Preparation supplies PINHOLE views, exclusion masks, calibrated poses, and LiDAR in a consistent world coordinate system.</p></aside></div><figcaption><b>Figure 3.</b> The four states describe the documented training lifecycle. The arrows show supervision and maintenance relationships, not measured gradients or an interactive training run. <a href="#ref-1">[1]</a></figcaption></figure>
+<div class="prose"><aside class="note"><span class="eyebrow">Why the checkpoint matters</span><p>The default training path also optimizes per-image appearance, distortion, and camera parameters. These are part of training-time fitting, not properties that a generic SOG viewer automatically recovers. <a href="#ref-1">[1]</a></p></aside>
+<details class="upstream"><summary><span><span class="eyebrow">Upstream, in brief</span>What happens before Gaussian training?</span><span aria-hidden="true">+</span></summary><div class="details-body"><p>Stages 0–4 handle decoding, dynamic-point filtering, synchronization, image/pose pairing, and person masks. Stages 5–7 perform feature matching, triangulation, and joint visual–LiDAR geometry optimization.</p><p>Stage 8 projects each fisheye image into three 1024 × 1024, 90° PINHOLE views. These training views differ from Stage 5's five-view feature-extraction projections. Stage 9 then consumes the prepared views alongside the filtered LiDAR map and trajectory. <a href="#ref-4">[4]</a></p></div></details></div>
+</section>
+<section class="chapter" id="evidence"><span id="evaluation" class="anchor-alias"></span><div class="prose"><p class="eyebrow">03 / Recorded evidence</p><h2>One complete run.<br>Clearly bounded evidence.</h2><p>The <strong>133957</strong> run completed Stages 0–10 from raw inputs, starting on October 2 and finishing on October 3, 2026. The numbers below belong to that run, not to the trainer's separate default Test3 configuration. <a href="#ref-3">[3]</a></p></div>
+<div class="run-stats mid"><div><strong>7,770</strong><span>1024² training views</span></div><div><strong>204,249</strong><span>paired LiDAR / RGB updates</span></div><div><strong>10.29<span>M</span></strong><span>Gaussians in the SOG export</span></div><div><strong>106.13</strong><span>MiB · compressed SOG</span></div></div>
+<figure class="figure mid results"><div class="figure-bar"><span>Frozen-checkpoint evaluation</span><span class="tag">Training views only</span></div><div class="results-grid"><div class="quality-plot"><h3>PSNR on the same training views</h3><p class="fine">The toned branch applies learned per-image appearance.</p><div class="bar-label"><span>Raw RGB</span><strong>19.8594 <small>dB</small></strong></div><div class="track"><div class="bar raw" style="--value:66.198%"></div></div><div class="bar-label"><span>Toned RGB</span><strong>25.3347 <small>dB</small></strong></div><div class="track"><div class="bar toned" style="--value:84.449%"></div></div><div class="plot-axis"><span>0</span><span>10</span><span>20</span><span>30 dB</span></div></div><div class="metric-table-wrap"><table><caption>Reported per-view equal-weight means</caption><thead><tr><th scope="col">Output</th><th scope="col">PSNR ↑</th><th scope="col">SSIM ↑</th></tr></thead><tbody><tr><th scope="row">Raw RGB</th><td>19.8594</td><td>0.777927</td></tr><tr><th scope="row">Toned RGB</th><td>25.3347</td><td>0.809903</td></tr></tbody></table><p class="fine">7,770 views · frozen checkpoint<br>Recorded training time: approximately 1,489 s.</p></div></div><figcaption><b>Figure 4.</b> Raw and toned outputs share the learned cameras and distortion. Only toned output applies the existing appearance model; no test-time fitting was performed. These are not baseline-versus-method results. <a href="#ref-3">[3]</a></figcaption></figure>
+<div class="prose"><aside class="note warning"><span class="eyebrow">What these numbers do not establish</span><p>Training-view fitting is not held-out generalization. Toned metrics are not SOG viewer scores, and unchanged Gaussian count does not make SOG compression lossless. This recorded run does not establish a quality advantage over other methods. <a href="#ref-2">[2]</a> <a href="#ref-3">[3]</a></p></aside><details><summary>Evaluation protocol and exact counts <span aria-hidden="true">+</span></summary><div class="details-body"><p>PSNR uses valid, unmasked, unclipped float RGB with data range 1. SSIM uses the native 11 × 11 CUDA kernel and only fully valid windows. Metrics are averaged equally across views. The SOG export contains exactly 10,294,046 Gaussians, with no additional point removal during publishing. <a href="#ref-3">[3]</a></p></div></details></div>
+</section>
+<section class="chapter" id="delivery"><span id="explore" class="anchor-alias"></span><div class="prose"><p class="eyebrow">04 / Browser delivery</p><h2>A portable scene.<br>Not the entire training state.</h2><p>Stage 10 combines the main and environment Gaussians, converts the model to the official SOG format, and emits a self-hostable SuperSplat Viewer. In this project, LCY is standard little-endian PLY encoding. SOG quantizes the Gaussian attributes; the browser uses the exported scene without per-image checkpoint corrections. <a href="#ref-2">[2]</a></p></div>
+<figure class="figure mid"><div class="delivery-flow"><div><span class="micro">Native model</span><strong>LCY / PLY</strong><small>Main + environment<br>SH0 Gaussian parameters</small></div><span class="flow-arrow" aria-hidden="true">→</span><div><span class="micro">Portable asset</span><strong>SOG</strong><small>Lossy attribute encoding<br>Retained Gaussian count</small></div><span class="flow-arrow" aria-hidden="true">→</span><div><span class="micro">Browser</span><strong>SuperSplat</strong><small>Client-side GPU renderer<br>Static web delivery</small></div></div><div class="delivery-bottom"><span>Not included in SOG</span><p>Per-image appearance · per-image distortion · full optimizer state</p></div><figcaption><b>Figure 5.</b> Training and delivery are separate contracts. For the documented SH0 export, compression used CPU workers; this is distinct from GPU rendering in the browser. <a href="#ref-2">[2]</a></figcaption></figure>
+<div class="prose"><div class="scene-status"><span class="status-dot" aria-hidden="true"></span><div><h3>Public scene asset not attached</h3><p>The recorded run passed a hardware-GPU browser capture check. Its Stage 10 publishing files were later cleaned, so an online reconstruction is not attached here. A freshly exported scene is needed to attach the real viewer. <a href="#ref-3">[3]</a></p></div></div><details><summary>Coordinate and checkpoint boundaries <span aria-hidden="true">+</span></summary><div class="details-body"><p>The documented SOG publishing transform is (x, y, z) → (−x, z, y), with the initial camera transformed consistently. SOG does not include the checkpoint's appearance or distortion fields. The native checkpoint does not contain the full Gaussian Adam state and scheduler, so it is not an exact-resume training checkpoint. <a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></p></div></details></div>
+</section>
+<section class="chapter resources" id="resources"><div class="prose"><p class="eyebrow">05 / Implementation &amp; sources</p><h2>Follow the implementation.</h2><p>The system integrates data preparation, reconstruction, training, and publication. The native training backend reuses the pinned <code>3dgs_CUDA</code> Linux revision; project-specific interfaces and experiments are recorded separately. The backend provenance identifies the reused components and the project-specific changes. <a href="#ref-5">[5]</a></p><div class="resource-links"><a class="btn primary" href="https://github.com/NIZAHO/3dgs">Implementation ↗</a><a class="btn" href="https://github.com/NIZAHO/3dgs-page">Page source ↗</a><a class="btn" href="./assets/overview.svg" download>Overview SVG ↓</a></div><p class="fine">The project repository and implementation-document links may require access. This project page is public.</p><ol class="references"><li id="ref-1"><a href="https://github.com/NIZAHO/3dgs/blob/main/docs/stages/stage9.md">Stage 9 — Native CUDA SH0 training ↗</a><span>Initialization, supervision, maintenance, image corrections, evaluation, and limitations.</span></li><li id="ref-2"><a href="https://github.com/NIZAHO/3dgs/blob/main/docs/stages/stage10.md">Stage 10 — SOG &amp; SuperSplat delivery ↗</a><span>Model encoding, coordinate conversion, browser checks, and publishing boundaries.</span></li><li id="ref-3"><a href="https://github.com/NIZAHO/3dgs/blob/main/experiments/pipelines/20261002_133957_fresh/README.md">133957 — Full-pipeline completion record ↗</a><span>Source of every run count, size, runtime, and score on this page.</span></li><li id="ref-4"><a href="https://github.com/NIZAHO/3dgs/blob/main/README.md">Project overview &amp; stage contracts ↗</a><span>Sensor preparation and visual–LiDAR geometry before Gaussian training.</span></li><li id="ref-5"><a href="https://github.com/NIZAHO/3dgs/blob/main/src/gs/native/PROVENANCE.json">Native backend provenance ↗</a><span>Upstream revision 39578a0; reused components and project modifications.</span></li></ol><p class="fine">Publication components: <a href="https://github.com/playcanvas/splat-transform">splat-transform</a> and <a href="https://github.com/playcanvas/supersplat-viewer">SuperSplat Viewer</a>. Editorial inspiration: <a href="https://stellaludai.github.io/Mem2Gen/">Mem2Gen</a>. Original page code and vector illustrations.</p></div></section>
+</main>
+<footer><a class="brand" href="#top">3dgs</a><span>Chuan project · Native SH0 Gaussian training &amp; browser delivery.</span><a href="#top">Back to top ↑</a></footer>
+<noscript><p class="prose fine">Project text, the overview diagram, and recorded results remain readable without JavaScript. Interactive illustration controls require JavaScript.</p></noscript>
+<script src="./app.js?v=gs-story-1" defer></script>
+</body></html>

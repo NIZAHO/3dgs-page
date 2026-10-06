@@ -1,0 +1,75 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1440" height="570" viewBox="0 0 1440 570" role="img" aria-labelledby="title desc">
+<title id="title">3dgs: panoramic observations to a browser-ready Gaussian scene</title>
+<desc id="desc">Method illustration, not an experimental rendering. Dual-fisheye images and LiDAR feed compact data preparation. The native SH0 CUDA trainer initializes Gaussians from sparse points and sampled LiDAR, performs paired RGB and LiDAR updates, and prunes and densifies the scene. Main and environment Gaussians are exported as PLY-encoded LCY, compressed to SOG, and displayed in SuperSplat. Per-image corrections stay in the checkpoint.</desc>
+<defs>
+ <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="m1 1 6 3-6 3" fill="none" stroke="#787c82" stroke-width="1.2"/></marker>
+ <marker id="blueArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="m1 1 6 3-6 3" fill="none" stroke="#3478bb" stroke-width="1.2"/></marker>
+ <marker id="orangeArrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto"><path d="m1 1 6 3-6 3" fill="none" stroke="#bf6746" stroke-width="1.2"/></marker>
+ <radialGradient id="splat"><stop stop-color="#5389ba" stop-opacity=".62"/><stop offset=".6" stop-color="#5389ba" stop-opacity=".22"/><stop offset="1" stop-color="#5389ba" stop-opacity="0"/></radialGradient>
+ <radialGradient id="warmSplat"><stop stop-color="#ca865a" stop-opacity=".66"/><stop offset="1" stop-color="#ca865a" stop-opacity="0"/></radialGradient>
+ <g id="g"><ellipse rx="27" ry="13" fill="url(#splat)" transform="rotate(-28)"/><ellipse rx="18" ry="8" fill="none" stroke="#5c87ad" stroke-opacity=".38" transform="rotate(-28)"/></g>
+ <g id="w"><ellipse rx="24" ry="12" fill="url(#warmSplat)" transform="rotate(28)"/><ellipse rx="16" ry="7" fill="none" stroke="#b8805b" stroke-opacity=".4" transform="rotate(28)"/></g>
+ <g id="lens" fill="none" stroke="#83a3c1" stroke-width="1.25"><circle r="37" fill="#eef4f9"/><ellipse rx="17" ry="37"/><ellipse rx="37" ry="13"/><path d="M-37 0h74M0-37v74"/><path d="M-28 23-12 9 0 15 19-11 34 12" stroke="#3478bb" stroke-width="2"/></g>
+ <g id="cloud"><use href="#g" x="-62" y="-35"/><use href="#g" x="-40" y="-47"/><use href="#g" x="-18" y="-59"/><use href="#g" x="4" y="-71"/><use href="#g" x="26" y="-59"/><use href="#g" x="48" y="-47"/><use href="#g" x="70" y="-35"/><use href="#g" x="-62" y="-13"/><use href="#g" x="-40" y="-25"/><use href="#g" x="-18" y="-37"/><use href="#g" x="4" y="-49"/><use href="#g" x="26" y="-37"/><use href="#g" x="48" y="-25"/><use href="#g" x="70" y="-13"/><use href="#g" x="-62" y="9"/><use href="#g" x="-40" y="-3"/><use href="#g" x="-18" y="-15"/><use href="#g" x="4" y="-27"/><use href="#g" x="26" y="-15"/><use href="#g" x="48" y="-3"/><use href="#g" x="70" y="9"/><use href="#w" x="-62" y="34"/><use href="#w" x="-40" y="46"/><use href="#w" x="-18" y="58"/><use href="#w" x="4" y="70"/><use href="#w" x="26" y="58"/><use href="#w" x="48" y="46"/><use href="#w" x="70" y="34"/><use href="#w" x="-18" y="34"/><use href="#w" x="4" y="46"/><use href="#w" x="26" y="34"/><use href="#w" x="4" y="22"/></g>
+</defs>
+<rect width="1440" height="570" fill="#fff"/>
+<g font-family="Arial, Helvetica, sans-serif" fill="#252b31">
+ <text x="38" y="37" font-size="13" letter-spacing="2" fill="#737b82">SYSTEM OVERVIEW</text>
+ <text x="1402" y="37" font-size="12" text-anchor="end" fill="#7a8085">METHOD ILLUSTRATION · NOT A SCENE RENDER</text>
+ <path d="M38 54h1364" stroke="#e4e6e8"/>
+ <text x="42" y="91" font-size="18" font-weight="600">01</text><text x="77" y="91" font-size="18">Capture &amp; prepare</text>
+ <text x="343" y="91" font-size="18" font-weight="600" fill="#3478bb">02</text><text x="378" y="91" font-size="18">Learn a Gaussian scene</text>
+ <text x="1173" y="91" font-size="18" font-weight="600">03</text><text x="1208" y="91" font-size="18">Publish</text>
+ <rect x="38" y="110" width="250" height="365" rx="12" fill="#f7f7f5" stroke="#e5e5df"/>
+ <use href="#lens" x="116" y="177"/><use href="#lens" x="209" y="177"/>
+ <text x="163" y="236" text-anchor="middle" font-size="15" font-weight="600">Dual-fisheye images</text>
+ <text x="163" y="258" text-anchor="middle" font-size="12" fill="#737b82">Calibrated views + masks</text>
+ <g fill="#bf6746"><circle cx="106" cy="300" r="2.3"/><circle cx="126" cy="290" r="2.3"/><circle cx="146" cy="280" r="2.3"/><circle cx="166" cy="290" r="2.3"/><circle cx="186" cy="300" r="2.3"/><circle cx="206" cy="310" r="2.3"/><circle cx="86" cy="310" r="2.3"/><circle cx="106" cy="320" r="2.3"/><circle cx="126" cy="310" r="2.3"/><circle cx="146" cy="300" r="2.3"/><circle cx="166" cy="310" r="2.3"/><circle cx="186" cy="320" r="2.3"/><circle cx="146" cy="320" r="2.3"/><circle cx="166" cy="330" r="2.3"/><circle cx="126" cy="330" r="2.3"/><circle cx="146" cy="340" r="2.3"/><circle cx="226" cy="320" r="2.3"/></g>
+ <text x="163" y="370" text-anchor="middle" font-size="15" font-weight="600">LiDAR + trajectory</text>
+ <path d="M64 390h198" stroke="#deded8"/>
+ <text x="163" y="418" text-anchor="middle" font-size="12" fill="#646d76">Sync · masks · joint geometry</text>
+ <text x="163" y="443" text-anchor="middle" font-size="12" fill="#646d76">PINHOLE training views · Stage 0–8</text>
+ <path d="M290 284h36" fill="none" stroke="#787c82" stroke-width="1.6" marker-end="url(#arrow)"/>
+ <rect x="340" y="110" width="785" height="365" rx="12" fill="#f5f8fc" stroke="#c8d8e8"/>
+ <text x="367" y="142" font-size="12" letter-spacing="1.3" fill="#3478bb">STAGE 9 · NATIVE CUDA · SH0</text>
+ <rect x="365" y="170" width="189" height="78" rx="8" fill="#fff" stroke="#b9cfe3"/>
+ <text x="459" y="202" text-anchor="middle" font-size="15" fill="#28649a" font-weight="600">RGB supervision</text>
+ <text x="459" y="225" text-anchor="middle" font-size="12" fill="#697888">Huber + SSIM</text>
+ <rect x="365" y="329" width="189" height="78" rx="8" fill="#fff" stroke="#dfc5b7"/>
+ <text x="459" y="361" text-anchor="middle" font-size="15" fill="#a85435" font-weight="600">LiDAR supervision</text>
+ <text x="459" y="384" text-anchor="middle" font-size="12" fill="#817167">Depth raster + loss</text>
+ <path d="M554 209h40q12 0 12 12v35h33" fill="none" stroke="#3478bb" stroke-width="1.7" marker-end="url(#blueArrow)"/>
+ <path d="M554 368h40q12 0 12-12v-39h33" fill="none" stroke="#bf6746" stroke-width="1.7" marker-end="url(#orangeArrow)"/>
+ <use href="#cloud" transform="translate(751 282) scale(1.14)"/>
+ <text x="751" y="391" text-anchor="middle" font-size="16" font-weight="600">Shared Gaussian scene</text>
+ <text x="751" y="413" text-anchor="middle" font-size="12" fill="#66788b">Position · scale · rotation · opacity · SH0</text>
+ <path d="M844 270h43" fill="none" stroke="#787c82" stroke-width="1.6" marker-end="url(#arrow)"/>
+ <rect x="898" y="184" width="200" height="173" rx="8" fill="#fff" stroke="#d1d9e2"/>
+ <text x="998" y="214" text-anchor="middle" font-size="15" font-weight="600">Adaptive optimization</text>
+ <text x="998" y="247" text-anchor="middle" font-size="13" fill="#66788b">GPU-resident Adam</text>
+ <path d="M921 263h154" stroke="#e1e7ee"/>
+ <text x="998" y="291" text-anchor="middle" font-size="13">Prune + densify</text>
+ <text x="998" y="314" text-anchor="middle" font-size="12" fill="#66788b">100-step maintenance cadence</text>
+ <path d="M998 357v20q0 10-10 10h-85" fill="none" stroke="#787c82" stroke-width="1.3" stroke-dasharray="4 4" marker-end="url(#arrow)"/>
+ <text x="998" y="413" text-anchor="middle" font-size="12" fill="#66788b">Paired RGB / LiDAR updates</text>
+ <path d="M366 432h732" stroke="#d6e1ed"/>
+ <text x="733" y="457" text-anchor="middle" font-size="12" fill="#64788d">Initialize: sparse points + sampled LiDAR + environment Gaussians</text>
+ <path d="M1127 284h33" fill="none" stroke="#787c82" stroke-width="1.6" marker-end="url(#arrow)"/>
+ <rect x="1171" y="110" width="231" height="365" rx="12" fill="#f7f7f5" stroke="#e5e5df"/>
+ <rect x="1192" y="145" width="189" height="62" rx="7" fill="#fff" stroke="#d7d9d8"/>
+ <text x="1286" y="171" text-anchor="middle" font-size="14" font-weight="600">Main + environment</text>
+ <text x="1286" y="192" text-anchor="middle" font-size="12" fill="#737b82">LCY / PLY → SOG</text>
+ <path d="M1286 211v30" stroke="#787c82" stroke-width="1.4" marker-end="url(#arrow)"/>
+ <rect x="1192" y="253" width="189" height="125" rx="7" fill="#fff" stroke="#b8c5d0"/>
+ <path d="M1192 273h189" stroke="#d1d8de"/>
+ <g fill="#9cabb8"><circle cx="1204" cy="263" r="2"/><circle cx="1212" cy="263" r="2"/><circle cx="1220" cy="263" r="2"/></g>
+ <use href="#cloud" transform="translate(1285 323) scale(.46)"/>
+ <text x="1286" y="409" text-anchor="middle" font-size="15" font-weight="600">SuperSplat Viewer</text>
+ <text x="1286" y="435" text-anchor="middle" font-size="12" fill="#737b82">Client-side GPU rendering</text>
+ <text x="1286" y="455" text-anchor="middle" font-size="12" fill="#737b82">Lossy SOG · static hosting</text>
+ <circle cx="46" cy="515" r="4" fill="#3478bb"/><text x="59" y="520" font-size="12" fill="#637180">Image appearance</text>
+ <circle cx="202" cy="515" r="4" fill="#bf6746"/><text x="215" y="520" font-size="12" fill="#637180">Geometric observations</text>
+ <text x="1400" y="516" text-anchor="end" font-size="12" fill="#737b82">Per-image appearance / distortion stay in the checkpoint, not in SOG.</text>
+ <text x="38" y="548" font-size="11" fill="#969ba0">3dgs / Chuan · Architecture derived from project Stage 9–10 documentation · Original vector illustration</text>
+</g>
+</svg>
