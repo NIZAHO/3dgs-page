@@ -25,7 +25,7 @@ jobs:
               except (UnicodeError,OSError): continue
               new=re.sub('lcy',lambda m:'PLY' if m[0].isupper() else 'ply',old,flags=re.I)
               new=new.replace('PLY/PLY','PLY').replace('PLY / PLY','PLY')
-              if p.name=='index.html':
+              if p.as_posix()=='website/index.html':
                   new=new.replace('<span id="explore" class="anchor-alias"></span>','')
                   new=new.replace('In this project, PLY is standard little-endian PLY encoding.','The native model uses standard little-endian Gaussian PLY, which can also be opened directly in the embedded viewer.')
                   new=new.replace('04 / Browser delivery','05 / Browser delivery').replace('05 / Implementation &amp; sources','06 / Implementation &amp; sources')
@@ -40,7 +40,7 @@ jobs:
                       new=new.replace('<a class="btn" href="#evidence">Recorded results</a>','<a class="btn" href="#explore">Browse examples</a><a class="btn" href="#evidence">Recorded results</a>')
                   if 'scene-browser.css' not in new: new=new.replace('</head>','<link rel="stylesheet" href="./scene-browser.css?v=ply-viewer-1">\n</head>')
                   if 'scene-browser.js' not in new: new=new.replace('</body>','<script type="module" src="./scene-browser.js?v=ply-viewer-1"></script>\n</body>')
-              if p.name=='CONTENT_SOURCES.md':
+              if p.as_posix()=='website/CONTENT_SOURCES.md':
                   start=new.find('## Scene availability')
                   end=new.find('## Design reference',start)
                   assert start>=0 and end>start
