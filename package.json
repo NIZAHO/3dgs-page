@@ -1,0 +1,9 @@
+{
+  "name": "3dgs-project-page",
+  "private": true,
+  "type": "module",
+  "scripts": {"build": "node scripts/build-viewer.mjs", "test": "node scripts/test-viewer.mjs"},
+  "dependencies": {"@playcanvas/supersplat-viewer": "1.37.0"},
+  "devDependencies": {"playwright": "1.55.1"},
+  "engines": {"node": ">=22"}
+}

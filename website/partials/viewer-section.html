@@ -1,0 +1,23 @@
+<section class="chapter" id="explore" aria-labelledby="explore-heading">
+  <div class="prose">
+    <p class="eyebrow">04 / Explore scenes</p>
+    <h2 id="explore-heading">Step inside a Gaussian scene.</h2>
+    <p>Choose a published example, or open a Gaussian <strong>PLY</strong> from your device. The model is rendered here in the browser. Local files stay on your device and are not uploaded.</p>
+  </div>
+  <div class="scene-browser wide" id="scene-browser">
+    <div class="scene-browser-toolbar">
+      <form id="scene-form"><label for="scene-select">Examples</label><select id="scene-select" disabled><option>Loading example list…</option></select><button class="btn primary" id="load-example" disabled type="submit">Load example</button></form>
+      <button class="btn" id="open-local" type="button">Open local PLY</button><input id="local-model" type="file" accept=".ply,.sog" hidden>
+    </div>
+    <div class="scene-viewport" id="scene-viewport">
+      <div id="scene-empty"><svg viewBox="0 0 80 80" width="66" height="66" fill="none" stroke="currentColor" stroke-width="1.4" aria-hidden="true"><path d="m40 7 28 16v34L40 73 12 57V23Z"/><path d="m12 23 28 17 28-17M40 40v33"/><ellipse cx="40" cy="39" rx="26" ry="10" transform="rotate(-30 40 39)"/></svg><h3>Your next scene starts here.</h3><p id="scene-empty-copy">Add an example to the scene list, or open a local Gaussian PLY.</p><span>PLY by default · SOG also supported</span></div>
+      <div id="scene-frame-slot"></div>
+    </div>
+    <div class="scene-browser-bottom"><p id="scene-status" role="status" aria-live="polite" data-state="empty">No model loaded.</p><div class="scene-actions"><button id="reset-scene" type="button" disabled>Reset view</button><button id="close-scene" type="button" disabled>Unload</button><button id="fullscreen-scene" type="button">Fullscreen</button></div></div>
+    <p class="scene-description" id="scene-description">Examples are added manually. No reconstruction result is preloaded or simulated.</p>
+  </div>
+  <div class="prose scene-instructions"><p class="fine">Drag to orbit · right-drag to pan · scroll to zoom. Click inside the viewer before using its keyboard controls. Large PLY files can require substantial browser memory.</p>
+    <details><summary>Open a model link <span aria-hidden="true">+</span></summary><form id="model-url-form" class="model-url-form"><label for="model-url">Public HTTPS link to a Gaussian PLY or SOG</label><div><input id="model-url" type="url" placeholder="https://your-storage.example/scene.ply" required><button class="btn" type="submit">Open</button></div><p class="fine">Use a direct file URL, not a GitHub file-preview page. External hosting must allow cross-origin access.</p></form></details>
+    <details><summary>Add your own published examples <span aria-hidden="true">+</span></summary><div class="details-body"><p>Place an authorized model in <code>website/examples/your-scene/scene.ply</code>, then add its name and URL to <code>website/examples/scenes.json</code>. Push to <code>main</code> to publish it.</p><p><a href="https://github.com/NIZAHO/3dgs-page/blob/main/website/examples/README.md">Example configuration and model preparation ↗</a></p><p class="fine">Opening a local file only previews it in this browser; it does not publish it for other visitors.</p></div></details>
+  </div>
+</section>

@@ -1,0 +1,37 @@
+name: Gaussian PLY viewer checks
+on:
+  push:
+    branches: [main, ply-scene-viewer]
+    paths: ['website/**', 'scripts/**', 'package*.json', '.github/workflows/viewer-smoke.yml']
+  pull_request:
+    paths: ['website/**', 'scripts/**', 'package*.json']
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - name: Build self-hosted runtime
+        run: |
+          npm run build
+          node --check website/scene-browser.js
+          node --check website/viewer/viewer.js
+      - run: npx playwright install --with-deps chromium
+      - name: Test PLY rendering, examples and error handling
+        run: npm test
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: viewer-smoke-screenshots
+          path: test-artifacts/
+          retention-days: 3
