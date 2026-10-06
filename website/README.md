@@ -1,25 +1,33 @@
 # 3dgs project page
 
-A static, source-grounded project page emphasizing Gaussian representation, paired RGB/LiDAR training, adaptive maintenance, recorded results, and SOG browser delivery. Upstream processing is compressed into an expandable summary.
+Source-grounded project story, Gaussian PLY-first naming, interactive method illustrations, and an embedded scene viewer with manually managed examples.
 
-## Preview
+## Build and preview
 
-From the repository root: `python -m http.server 8000 -d website`, then open http://localhost:8000.
+```bash
+npm ci
+npm run build
+python -m http.server 8000 -d _site
+```
 
-## Files
+Open http://localhost:8000. Do not serve `website/` directly for the real renderer: the build copies the pinned official SuperSplat bundle into `_site/viewer/`.
 
-- `index.html`: accessible article, source notes, figures, evidence, original symmetric navbar SVG.
-- `styles.css`: responsive editorial layout, light/dark themes, mobile Contents menu.
-- `app.js`: synthetic Gaussian controls, keyboard-operable training tabs, theme toggle, navigation/progress.
-- `assets/overview.svg`: editable vector system-overview figure (not an AI-generated image or a real reconstruction).
-- `CONTENT_SOURCES.md`: source lineage, exact run counts, limitations, asset provenance.
+## Examples
 
-No build step, package dependency, framework, tracking, or scene download is required. The existing Pages workflow still publishes only `website/` on changes to main. It was not modified by this redesign.
+Edit `website/examples/scenes.json`. See `website/examples/README.md` for local previews, published models, external model URLs, optional camera settings and privacy boundaries. No example is fabricated or downloaded automatically. Default: Gaussian PLY; bundled SOG is optional.
 
-## Editing safeguards
+`website/scene-browser.js` manages the public example list and same-origin iframe lifecycle. `website/viewer/viewer.js` loads the pinned renderer after a deliberate action, supports local File objects without uploading, reports loading/error/first-frame state, and destroys its context on unmount.
 
-Keep training-view, held-out, and browser/SOG metrics separate. Do not use default Test3 view counts as values for the 133957 run. Do not add Paper/CVPR badges or public-viewer links without real resources. Refer to CONTENT_SOURCES.md before changing technical claims.
+## Validation
 
-## Checks performed
+```bash
+npx playwright install chromium
+npm run build
+npm test
+```
 
-Chromium rendering using the authored local assets: desktop/light and dark layouts, 360/390/768/1024/1440 widths without page-level horizontal overflow, all internal anchors, all four lifecycle tabs, arrow/Home/End keyboard navigation, scale/opacity controls and reset, mobile menu/Escape, and no JavaScript page errors. Google Fonts was blocked during local checking, so fallbacks were also exercised. Storage persistence across navigation was not tested in the local about:blank renderer.
+The browser smoke test uses a tiny synthetic PLY created only under the test output directory, never as a claimed reconstruction or committed/public example. It tests local PLY rendering, configured examples, lazy loading, malformed input, missing URLs, unloading, and desktop/mobile overflow. A software-rendered CI check is not a hardware performance or real-scene quality measurement.
+
+## Deployment
+
+`.github/workflows/chuan-pages.yml` builds and deploys `_site/` after website/build/dependency changes on `main`. Dependencies and licenses are bundled with the deployed site; the public model list remains your explicit choice.
