@@ -1,6 +1,6 @@
 # Page content provenance
 
-Reviewed on 2026-10-14. The page now leads with the research story "No Pinhole Proxies" (validation phase). Public-facing summary authorized by the repository owner. No raw images, private datasets, checkpoint files, tokens, host addresses or engineering source trees have been copied into this website.
+Reviewed on 2026-10-14. The page now leads with the research story "No Pinhole Proxies" (validation phase), in English and Chinese (toggle in the top bar; `?lang=zh` / `?lang=en` in the URL; otherwise the browser language, remembered per visitor). Both languages carry the same content. Public-facing summary authorized by the repository owner. No raw images, private datasets, checkpoint files, tokens, host addresses or engineering source trees have been copied into this website.
 
 ## Research story (§01–§06, §09)
 
@@ -15,6 +15,9 @@ Sources, all in NIZAHO/3dgs (main, 2026-10-14):
 Numbers on the page are of two kinds only: published by others (Oxford Spires F@10 cm ranges, cited) or read from our code (counts of depth definitions, missing gradient, virtual camera size). The R1 Oxford numbers (23.67 / 21.75 dB) are a single run at an unequal budget and are labelled as such. The 2.9× pixel ratio is a derivation, labelled as such.
 
 ## Figures
+
+- Figure 4 (pipeline architecture) is the planned design of C1–C3 next to the baseline R1; it is a diagram of intent, not of implemented code.
+- Figure 9 (positioning map) and Table 2 (property matrix) place concurrent work from what each paper and our prior-art notes in `05_contributions.md` state; every table mark has a hover reason. Our own row is a design, labelled as such.
 
 - Figure 1 (teaser), Figure 6 (gate) and Figure 7 (kernel map) are hand-authored schematics drawn in code. They are labelled "Schematic · not data".
 - Figure 3 evaluates a synthetic beam (toy numbers stated in its caption). Figure 4 evaluates the printed ray-response formula live on a 2D Gaussian. Figure 5 is a schematic Pareto front illustrating Das & Dennis (1997); it is not measured data.
