@@ -2,15 +2,16 @@
 <html lang="en">
 <head>
 <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
-<title>3dgs — LiDAR-guided Gaussian scenes</title>
-<meta name="description" content="The Chuan 3dgs project: calibrated panoramic observations, paired RGB and LiDAR supervision, native CUDA SH0 Gaussian training, and SOG browser delivery.">
+<title>No Pinhole Proxies — fisheye + LiDAR Gaussian splatting</title>
+<meta name="description" content="Research preview: why camera–LiDAR Gaussian splatting looks right but measures wrong, and three contributions under test — one ray model for fisheye pixels and LiDAR beams, evidence-gated optimisation, and a drop-in CUDA implementation.">
 <meta name="color-scheme" content="light dark"><meta name="theme-color" content="#ffffff">
 <link rel="canonical" href="https://nizaho.github.io/3dgs-page/">
-<meta property="og:title" content="3dgs — From panoramic capture to Gaussian scenes"><meta property="og:description" content="An illustrated guide to the Chuan project's Gaussian representation, paired RGB / LiDAR training, and browser delivery."><meta property="og:type" content="website">
+<meta property="og:title" content="No Pinhole Proxies — measurement-consistent Gaussian splatting for fisheye–LiDAR rigs"><meta property="og:description" content="Inverse rendering is not inverse measurement: a research preview with the diagnosis, three contributions, their math, and the experiments that will decide them."><meta property="og:type" content="website">
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Source+Serif+4:ital,opsz,wght@0,8..60,400;0,8..60,600;1,8..60,400&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="./vendor/katex/katex.min.css?v=gs-story-1">
 <link rel="stylesheet" href="./styles.css?v=gs-story-1">
-<script>try{let t=localStorage.getItem('chuan-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
+<script>document.documentElement.classList.add('js');try{let t=localStorage.getItem('chuan-theme');if(t==='light'||t==='dark')document.documentElement.dataset.theme=t}catch(e){}</script>
 <link rel="stylesheet" href="./scene-browser.css?v=ply-viewer-1">
 </head>
 <body>
@@ -18,41 +19,335 @@
 <header class="topbar"><div class="nav-inner">
 <a class="brand" href="#top" aria-label="3dgs, back to top">
 <svg class="brand__icon" width="24" height="24" viewBox="0 0 32 32" aria-hidden="true"><rect class="brand__frame" x="1.5" y="1.5" width="29" height="29" rx="8"/><g class="brand__orbit" fill="none"><path d="M16 5.5v5M16 21.5v5M5.5 16h5M21.5 16h5"/></g><path class="brand__core" d="M16 9.25 21.5 12.38v7.24L16 22.75l-5.5-3.13v-7.24L16 9.25Z"/><path class="brand__axis" d="M16 9.25v13.5M10.5 12.38l11 7.24M21.5 12.38l-11 7.24"/><g class="brand__nodes"><circle class="cool" cx="16" cy="5.5" r="2.35"/><circle class="warm" cx="26.5" cy="16" r="2.35"/><circle class="cool" cx="16" cy="26.5" r="2.35"/><circle class="warm" cx="5.5" cy="16" r="2.35"/></g></svg><span>3dgs</span></a>
-<nav id="navigation" aria-label="Sections"><a href="#representation">Gaussians</a><a href="#training">Training</a><a href="#explore">Examples</a><a href="#evidence">Evidence</a><a href="#delivery">Delivery</a><a href="#resources">Resources</a></nav>
+<nav id="navigation" aria-label="Sections"><a href="#gap">Gap</a><a href="#diagnosis">Diagnosis</a><a href="#rays">C1 · Rays</a><a href="#gate">C2 · Gate</a><a href="#cost">C3 · Cost</a><a href="#plan">Validation</a><a href="#baseline">Baseline</a><a href="#explore">Scenes</a><a href="#scope">Scope</a></nav>
 <button id="menu" class="menu-btn" aria-expanded="false" aria-controls="navigation">Contents <span aria-hidden="true">⌄</span></button>
 <button id="theme" class="icon-btn" aria-label="Switch theme" title="Switch theme"><svg width="18" height="18" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8"/><path d="M12 4a8 8 0 0 1 0 16Z" fill="currentColor" stroke="none"/></svg></button>
 </div><div id="progress" aria-hidden="true"></div></header>
+
 <main id="main">
 <section class="hero" id="top">
-<p class="eyebrow">Chuan project <span> / </span> LiDAR-guided 3D Gaussian Splatting</p>
-<h1>From panoramic capture<br>to <em>Gaussian scenes.</em></h1>
-<p class="lead">Learn appearance from images, constrain geometry with LiDAR,<br class="desktop-break"> and bring the resulting 3D scene into the browser.</p>
-<p class="byline">NIZAHO <span>·</span> Offline reconstruction system <span>·</span> Native CUDA / SH0</p>
-<div class="hero-actions"><a class="btn primary" href="#training">Explore the method <span aria-hidden="true">↓</span></a><a class="btn" href="#explore">Browse examples</a><a class="btn" href="#evidence">Recorded results</a><a class="btn" href="https://github.com/NIZAHO/3dgs">Project repository <span aria-hidden="true">↗</span></a></div>
-<figure class="overview wide" id="overview"><a class="overview-link" href="./assets/overview.svg" target="_blank" rel="noopener" aria-label="Open the full-size project overview"><img src="./assets/overview.svg" width="1440" height="570" fetchpriority="high" alt="System overview: dual-fisheye imagery and LiDAR feed preparation; paired RGB and LiDAR updates optimize a shared SH0 Gaussian scene with pruning and densification; PLY is compressed to SOG and displayed in SuperSplat."></a><figcaption><b>Figure 1.</b> The pipeline at a glance. Most of the work on this page concerns the Gaussian scene: its representation, optimization, and delivery. Original method illustration, not a reconstruction result. <a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a> <a class="figure-download" href="./assets/overview.svg" download>Download SVG ↗</a></figcaption></figure>
-</section>
-<div class="intro prose"><p class="takeaway"><span class="eyebrow">The central idea</span>A common 3D representation connects two kinds of observations: <strong class="blue">what cameras see</strong> and <strong class="orange">where surfaces are measured</strong>.</p><p>Chuan connects calibrated dual-fisheye capture and LiDAR geometry to an offline 3D Gaussian Splatting pipeline. Upstream processing prepares the views and poses; the core stage optimizes a Gaussian scene using both RGB and LiDAR updates. The resulting model is then packaged for a standard browser viewer. <a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></p></div>
-<section class="chapter" id="representation"><div class="prose"><p class="eyebrow">01 / Representation</p><h2>A scene is more than a point cloud.</h2><p>Each Gaussian carries a 3D position, scale, rotation, opacity, and color. Together, these overlapping primitives form the scene used by the renderer. The current native training profile uses <strong>SH0</strong>: the zero-order color component, rather than higher-order view-dependent spherical harmonics. <a href="#ref-1">[1]</a></p></div>
-<figure class="figure mid"><div class="figure-bar"><span>Inside a Gaussian scene</span><span class="tag">Interactive illustration</span></div><div class="representation-grid"><div class="splat-stage"><svg id="gaussian-demo" viewBox="0 0 600 360" role="img" aria-labelledby="gaussian-title"><title id="gaussian-title">Synthetic Gaussian arrangement illustrating scale and opacity, not a reconstructed dataset</title><defs><radialGradient id="demo-blue"><stop stop-color="#4b87bd" stop-opacity=".9"/><stop offset="1" stop-color="#4b87bd" stop-opacity="0"/></radialGradient><radialGradient id="demo-orange"><stop stop-color="#c68862" stop-opacity=".9"/><stop offset="1" stop-color="#c68862" stop-opacity="0"/></radialGradient></defs><g class="demo-grid" fill="none"><path d="m65 248 235-133 235 133-235 93ZM123 281l235-134M182 314l235-133M358 314 123 181M417 281 182 148"/><path d="M300 341V60" stroke-dasharray="4 5"/></g><g id="gaussian-primitives"></g><g fill="currentColor" class="axis-label"><text x="539" y="248">x</text><text x="55" y="249">y</text><text x="306" y="62">z</text></g></svg><span class="illustration-note">Synthetic arrangement · no model data</span></div><div class="controls"><h3>Small primitives.<br>A continuous visual field.</h3><p>Change the footprint and transparency to inspect how neighboring splats overlap.</p><label for="scale">Gaussian scale <output id="scale-value" for="scale">1.0×</output></label><input id="scale" type="range" min="50" max="170" value="100"><label for="opacity">Opacity <output id="opacity-value" for="opacity">0.65</output></label><input id="opacity" type="range" min="15" max="95" value="65"><button class="text-button" id="reset-gaussian" type="button">Reset illustration ↺</button><p class="fine">These controls demonstrate representation only. They do not run the project's trainer or renderer.</p></div></div><figcaption><b>Figure 2.</b> A schematic view of overlapping Gaussian primitives. Position and orientation are fixed in this illustration; the controls adjust scale and opacity.</figcaption></figure>
-</section>
-<section class="chapter" id="training"><span id="pipeline" class="anchor-alias"></span><div class="prose"><p class="eyebrow">02 / Gaussian training</p><h2>Two supervision paths.<br>One Gaussian scene.</h2><p>The native CUDA backend executes <strong>paired LiDAR and RGB updates</strong>. RGB fitting uses Huber and SSIM terms with depth/opacity regularization; the LiDAR branch rasterizes depth and evaluates its own loss. Gaussian parameters and Adam state remain GPU-resident. <a href="#ref-1">[1]</a></p></div>
-<figure class="figure wide training-figure"><div class="tabs" role="tablist" aria-label="Training lifecycle"><button id="tab-init" role="tab" aria-selected="true" aria-controls="training-panel" data-phase="init">01 <strong>Initialize</strong></button><button id="tab-fit" role="tab" aria-selected="false" aria-controls="training-panel" tabindex="-1" data-phase="fit">02 <strong>Supervise</strong></button><button id="tab-refine" role="tab" aria-selected="false" aria-controls="training-panel" tabindex="-1" data-phase="refine">03 <strong>Refine</strong></button><button id="tab-export" role="tab" aria-selected="false" aria-controls="training-panel" tabindex="-1" data-phase="export">04 <strong>Freeze &amp; export</strong></button></div>
-<div id="training-panel" role="tabpanel" aria-labelledby="tab-init" tabindex="0" data-phase="init"><div class="training-map"><div class="observation image-path"><span class="micro">Appearance observations</span><strong>RGB images</strong><small>Huber + SSIM<br>Depth / opacity regularization</small></div><span class="connector blue" aria-hidden="true">↘</span><div class="shared-scene"><span class="micro">Shared representation</span><svg viewBox="0 0 100 84" width="108" height="90" aria-hidden="true"><g fill="none" stroke="currentColor" stroke-width="1.1"><path d="m50 6 35 20v39L50 82 15 65V26Z"/><path d="m15 26 35 20 35-20M50 46v36" stroke-dasharray="3 3"/><ellipse cx="50" cy="43" rx="28" ry="10" transform="rotate(-30 50 43)"/><ellipse cx="50" cy="43" rx="28" ry="10" transform="rotate(30 50 43)"/></g><circle cx="50" cy="43" r="4" fill="currentColor"/></svg><strong>SH0 Gaussians</strong><small>Scene + environment</small></div><span class="connector" aria-hidden="true">→</span><div class="maintenance"><span class="micro">Adaptive capacity</span><strong>Prune &amp; densify</strong><small>100-step cadence<br>Final pruning before export</small></div><div class="observation lidar-path"><span class="micro">Geometry observations</span><strong>LiDAR depth</strong><small>Depth rasterization<br>Depth loss</small></div><span class="connector orange" aria-hidden="true">↗</span><div class="initialization"><span>Initialization</span> Sparse points + sampled LAS + environment</div></div><aside class="phase-note" aria-live="polite"><span class="micro" id="phase-kicker">01 / Initialize</span><h3 id="phase-title">Start from geometry, not an empty scene.</h3><p id="phase-copy">The documented native profile seeds the scene from sparse reconstruction and sampled LiDAR, adds environment Gaussians, and uses exact 3-nearest-neighbor initialization.</p><p class="phase-detail" id="phase-detail">Preparation supplies PINHOLE views, exclusion masks, calibrated poses, and LiDAR in a consistent world coordinate system.</p></aside></div><figcaption><b>Figure 3.</b> The four states describe the documented training lifecycle. The arrows show supervision and maintenance relationships, not measured gradients or an interactive training run. <a href="#ref-1">[1]</a></figcaption></figure>
-<div class="prose"><aside class="note"><span class="eyebrow">Why the checkpoint matters</span><p>The default training path also optimizes per-image appearance, distortion, and camera parameters. These are part of training-time fitting, not properties that a generic SOG viewer automatically recovers. <a href="#ref-1">[1]</a></p></aside>
-<details class="upstream"><summary><span><span class="eyebrow">Upstream, in brief</span>What happens before Gaussian training?</span><span aria-hidden="true">+</span></summary><div class="details-body"><p>Stages 0–4 handle decoding, dynamic-point filtering, synchronization, image/pose pairing, and person masks. Stages 5–7 perform feature matching, triangulation, and joint visual–LiDAR geometry optimization.</p><p>Stage 8 projects each fisheye image into three 1024 × 1024, 90° PINHOLE views. These training views differ from Stage 5's five-view feature-extraction projections. Stage 9 then consumes the prepared views alongside the filtered LiDAR map and trajectory. <a href="#ref-4">[4]</a></p></div></details></div>
-</section>
-<section class="chapter" id="evidence"><span id="evaluation" class="anchor-alias"></span><div class="prose"><p class="eyebrow">03 / Recorded evidence</p><h2>One complete run.<br>Clearly bounded evidence.</h2><p>The <strong>133957</strong> run completed Stages 0–10 from raw inputs, starting on October 2 and finishing on October 3, 2026. The numbers below belong to that run, not to the trainer's separate default Test3 configuration. <a href="#ref-3">[3]</a></p></div>
-<div class="run-stats mid"><div><strong>7,770</strong><span>1024² training views</span></div><div><strong>204,249</strong><span>paired LiDAR / RGB updates</span></div><div><strong>10.29<span>M</span></strong><span>Gaussians in the SOG export</span></div><div><strong>106.13</strong><span>MiB · compressed SOG</span></div></div>
-<figure class="figure mid results"><div class="figure-bar"><span>Frozen-checkpoint evaluation</span><span class="tag">Training views only</span></div><div class="results-grid"><div class="quality-plot"><h3>PSNR on the same training views</h3><p class="fine">The toned branch applies learned per-image appearance.</p><div class="bar-label"><span>Raw RGB</span><strong>19.8594 <small>dB</small></strong></div><div class="track"><div class="bar raw" style="--value:66.198%"></div></div><div class="bar-label"><span>Toned RGB</span><strong>25.3347 <small>dB</small></strong></div><div class="track"><div class="bar toned" style="--value:84.449%"></div></div><div class="plot-axis"><span>0</span><span>10</span><span>20</span><span>30 dB</span></div></div><div class="metric-table-wrap"><table><caption>Reported per-view equal-weight means</caption><thead><tr><th scope="col">Output</th><th scope="col">PSNR ↑</th><th scope="col">SSIM ↑</th></tr></thead><tbody><tr><th scope="row">Raw RGB</th><td>19.8594</td><td>0.777927</td></tr><tr><th scope="row">Toned RGB</th><td>25.3347</td><td>0.809903</td></tr></tbody></table><p class="fine">7,770 views · frozen checkpoint<br>Recorded training time: approximately 1,489 s.</p></div></div><figcaption><b>Figure 4.</b> Raw and toned outputs share the learned cameras and distortion. Only toned output applies the existing appearance model; no test-time fitting was performed. These are not baseline-versus-method results. <a href="#ref-3">[3]</a></figcaption></figure>
-<div class="prose"><aside class="note warning"><span class="eyebrow">What these numbers do not establish</span><p>Training-view fitting is not held-out generalization. Toned metrics are not SOG viewer scores, and unchanged Gaussian count does not make SOG compression lossless. This recorded run does not establish a quality advantage over other methods. <a href="#ref-2">[2]</a> <a href="#ref-3">[3]</a></p></aside><details><summary>Evaluation protocol and exact counts <span aria-hidden="true">+</span></summary><div class="details-body"><p>PSNR uses valid, unmasked, unclipped float RGB with data range 1. SSIM uses the native 11 × 11 CUDA kernel and only fully valid windows. Metrics are averaged equally across views. The SOG export contains exactly 10,294,046 Gaussians, with no additional point removal during publishing. <a href="#ref-3">[3]</a></p></div></details></div>
-</section>
-<section class="chapter" id="explore" aria-labelledby="explore-heading">
-  <div class="prose">
-    <p class="eyebrow">04 / Explore scenes</p>
-    <h2 id="explore-heading">Step inside a Gaussian scene.</h2>
-    <p>Choose a published example, or open a Gaussian <strong>PLY</strong> from your device. The model is rendered here in the browser. Local files stay on your device and are not uploaded.</p>
+<p class="kicker">Research preview <span>/</span> Fisheye + LiDAR Gaussian splatting <span>/</span> Validation phase · October 2026</p>
+<h1>No Pinhole Proxies</h1>
+<p class="subtitle">Measurement-consistent Gaussian splatting for fisheye–LiDAR rigs</p>
+<p class="byline">NIZAHO <span>·</span> Chuan project</p>
+<div class="hero-actions"><a class="btn primary" href="#gap">Read the story <span aria-hidden="true">↓</span></a><a class="btn" href="#plan">Validation plan</a><a class="btn" href="#explore">Explore scenes</a><a class="btn" href="https://github.com/NIZAHO/3dgs">Code &amp; draft <span aria-hidden="true">↗</span></a></div>
+
+<figure class="fig wide teaser" id="teaser" data-mode="proxy" aria-labelledby="teaser-caption">
+  <div class="fig-bar"><div class="seg" role="group" aria-label="Choose what the figure shows"><button type="button" data-mode="proxy" aria-pressed="true"><b>Proxy pipeline</b><span>baseline R1</span></button><button type="button" data-mode="ray" aria-pressed="false"><b>One ray model</b><span>C1</span></button><button type="button" data-mode="gate" aria-pressed="false"><b>+ Evidence gate</b><span>C1 + C2</span></button></div><span class="tag">Schematic · not data</span></div>
+  <div class="teaser-body">
+    <div class="scroll-x"><svg id="teaser-svg" class="teaser-svg" viewBox="0 0 1000 470" role="img" aria-labelledby="teaser-svg-title"><title id="teaser-svg-title">Top-down schematic of a fisheye camera and a LiDAR on one rig, a faint floater and an oblique wall covered by Gaussians.</title></svg></div>
+    <aside class="teaser-note" aria-live="polite"><span class="micro" id="teaser-kicker">Baseline R1</span><h3 id="teaser-title">Two sensors, two proxies, three depths.</h3><p id="teaser-copy"></p><ul class="teaser-legend" id="teaser-legend"></ul></aside>
   </div>
-  <div class="scene-browser wide" id="scene-browser">
+  <figcaption id="teaser-caption"><b>Figure 1.</b> One scene, three ways of supervising it. A rig with a fisheye camera (blue) and a LiDAR (orange) looks at an oblique wall covered by Gaussians and a faint floater in front of it. Switch between the proxy pipeline our baseline uses, the single ray model of Contribution 1, and the evidence gate of Contribution 2. Geometry is illustrative and not to scale.</figcaption>
+</figure>
+</section>
+
+<div class="col intro">
+<aside class="callout callout--tldr" aria-label="Summary"><p class="callout-label">TL;DR</p><p>Gaussian splatting from fisheye–LiDAR rigs looks right but measures wrong. We trace this to supervision: each sensor is replaced by a <strong>pinhole proxy</strong>, and the proxies disagree about what “depth” is, so geometry yields to appearance. We instead render every fisheye pixel and every LiDAR beam as <strong>the same ray</strong> with one termination depth, let the LiDAR evidence along those rays decide <strong>which degrees of freedom the photometric loss may move</strong>, and keep every acceleration of the existing CUDA trainer. All three are hypotheses with explicit kill criteria; none has been measured yet.</p></aside>
+<div class="stat-row l-mid">
+  <div><strong>0.54–0.85 <small>vs</small> 0.31–0.68</strong><span>F-score at 10 cm against survey scans on Oxford Spires: official LiDAR maps vs. a radiance field. Published <a href="#ref-2">[2]</a>.</span></div>
+  <div><strong>3</strong><span>definitions of depth that coexist for the same Gaussians in our proxy baseline: an expectation, a median and a first surface. Read from code.</span></div>
+  <div><strong>0</strong><span>gradient from either depth term to a Gaussian’s depth along the line of sight in that baseline. Read from code.</span></div>
+</div>
+<aside class="callout callout--note" aria-label="How to read this page"><p><strong>How to read this page.</strong> Numbers are either published by others or read from our own code; every figure that is not data says so. The contributions in §03–§05 are hypotheses under test, each stated with the result that would refute it (§06). No result of the proposed method appears anywhere on this page.</p></aside>
+</div>
+
+<!-- ============================================================== 01 GAP -->
+<section class="section col" id="gap" aria-labelledby="h-gap">
+<p class="eyebrow"><span class="num">01</span>The gap</p>
+<h2 id="h-gap">Photorealistic, but not metric</h2>
+<p>Handheld scanners, backpack and vehicle mapping systems and 360° capture rigs all pair wide-angle cameras with a LiDAR. Their users want one model that both looks right and measures right: a digital twin you can walk through and also put a tape measure on.</p>
+<p>Gaussian splatting <a href="#ref-1">[1]</a> delivered the first half. The second half has lagged. On Oxford Spires <a href="#ref-2">[2]</a>, whose terrestrial laser scans (TLS) give independent ground truth at 1 cm, the official LiDAR maps reach an F-score at 10 cm of 0.54–0.85 across sequences, while a radiance field trained on the same captures reaches 0.31–0.68.</p>
+<figure class="fig l-mid">
+  <div class="fig-bar"><span>Geometry against TLS, F-score at 10 cm (higher is better)</span><span class="tag">Published ranges</span></div>
+  <div class="range-chart" id="range-chart" role="img" aria-label="Range chart: official LiDAR maps 0.54 to 0.85; Nerfacto radiance field 0.31 to 0.68; native-fisheye splatting with LiDAR not yet measured.">
+    <div class="range-row"><span class="range-name">LiDAR maps <small>official</small></span><div class="range-track"><div class="range lidar" style="--lo:54%;--hi:85%" data-tip="Official LiDAR maps · F@10 cm 0.54–0.85 across Oxford Spires sequences [2]"><i>0.54</i><i>0.85</i></div></div></div>
+    <div class="range-row"><span class="range-name">Radiance field <small>Nerfacto</small></span><div class="range-track"><div class="range cam" style="--lo:31%;--hi:68%" data-tip="Nerfacto radiance field · F@10 cm 0.31–0.68 across Oxford Spires sequences [2]"><i>0.31</i><i>0.68</i></div></div></div>
+    <div class="range-row pending"><span class="range-name">Splatting, native fisheye + LiDAR</span><div class="range-track"><div class="range-pending" data-tip="Not yet measured. This is Experiment 1 (§06).">Not yet measured · Experiment 1</div></div></div>
+    <div class="range-axis" aria-hidden="true"><span>0</span><span>0.25</span><span>0.5</span><span>0.75</span><span>1</span></div>
+  </div>
+  <figcaption><b>Figure 2.</b> The photometric–metric gap as published for Oxford Spires <a href="#ref-2">[2]</a>: ranges over the benchmark’s sequences. The third row is the question this project starts from. Hover a range for its source.</figcaption>
+</figure>
+<p>The camera side has since been repaired. Native fisheye renderers <a href="#ref-3">[3]</a> <a href="#ref-4">[4]</a> <a href="#ref-5">[5]</a> <a href="#ref-6">[6]</a> stopped cutting the fisheye into perspective crops, which discarded field of view and resolution. That makes the next question unavoidable: does the geometric gap close once the camera is native and the LiDAR is used as depth supervision?</p>
+<aside class="callout callout--key" aria-label="Key takeaway"><p class="callout-label">Key takeaway</p><p>We do not know yet, and the plan is built around that. Experiment 1 measures it before anything else. If native-fisheye splatting with LiDAR supervision already matches the LiDAR scans it was trained on, there is no gap to explain, and the rest of this page is withdrawn.</p></aside>
+</section>
+
+<!-- ============================================================== 02 DIAGNOSIS -->
+<section class="section col" id="diagnosis" aria-labelledby="h-diag">
+<p class="eyebrow"><span class="num">02</span>Diagnosis</p>
+<h2 id="h-diag">Inverse rendering is not inverse measurement</h2>
+<p>Robotic mapping treats every reading as a <em>measurement</em> with a forward sensor model, from occupancy grids <a href="#ref-10">[10]</a> to TSDF fusion <a href="#ref-11">[11]</a>. Radiance fields treat images as <em>rendering targets</em> <a href="#ref-12">[12]</a> <a href="#ref-1">[1]</a>. With a single camera the two views coincide, because a rendered pixel is the measurement. A LiDAR breaks the symmetry.</p>
+<p>The inverse-rendering answer is to manufacture a second rendering proxy so that laser returns become “pixels”. Our own baseline R1, the working system of §07, is a representative example. It replaces each fisheye image with perspective crops rasterised through the affine EWA projection <a href="#ref-8">[8]</a>, whose error grows off-axis <a href="#ref-9">[9]</a>, and each LiDAR sweep with a virtual pinhole depth camera at the LiDAR origin (120° field of view, 256 × 256 queries) that renders</p>
+<div class="eq"><span class="tex tex-d">D_{\mathrm{R1}}(q) \;=\; \sum_i \; z_i\;\alpha_i\,\mathcal G_i(q)\;T_i(q)</span></div>
+<p>Read it from the inside out. <span class="tex">z_i</span> is the camera-axis depth of the <em>centre</em> of Gaussian <span class="tex">i</span>, <span class="tex">\alpha_i\mathcal G_i(q)</span> is how much of its projected 2D footprint covers query <span class="tex">q</span>, and <span class="tex">T_i(q)</span> is the light that survives the Gaussians in front. The sum is an opacity-weighted average of centre depths, compared with the depth of the measured return through <span class="tex">0.1\log(1+10\,|D_{\mathrm{R1}}-z_{\mathrm{meas}}|)</span>.</p>
+
+<div class="factcard" role="group" aria-label="One LiDAR beam through the baseline">
+  <div class="fc-head">Follow one LiDAR beam through the baseline</div>
+  <div class="fc-row"><span class="fc-k">Measured · LiDAR</span><span class="fc-v">the range <span class="tex">\rho</span> along its own beam to the first reflective surface</span><span class="fc-s ok">measurement</span></div>
+  <div class="fc-row"><span class="fc-k">Supervised · LiDAR loss</span><span class="fc-v">opacity-weighted camera-axis depth of Gaussian centres, normalised by <span class="tex">1-T</span> only when compositing stops at a 32-candidate batch boundary</span><span class="fc-s proxy">proxy</span></div>
+  <div class="fc-row"><span class="fc-k">Regularised · camera</span><span class="fc-v">expected depth pulled toward a separate median depth</span><span class="fc-s proxy">proxy</span></div>
+  <div class="fc-row"><span class="fc-k">Extracted · evaluation</span><span class="fc-v">yet another first surface</span><span class="fc-s proxy">proxy</span></div>
+  <div class="fc-row"><span class="fc-k">Gradient</span><span class="fc-v"><span class="tex">\partial D/\partial z_i</span> is not back-propagated in either branch</span><span class="fc-s missing">missing</span></div>
+  <div class="fc-foot">Read from the baseline trainer’s CUDA kernels (<code>lidar_raster.cu</code>, <code>image_raster.cu</code>). Code reading, not a measurement.</div>
+</div>
+
+<p>Each row is a different definition of depth applied to the same Gaussians, and they fail in three distinct ways.</p>
+<div class="triad l-mid">
+  <div><span class="micro">i · Quantity</span><h3>Centre, not range</h3><p><span class="tex">z_i</span> is constant across the footprint, so a 50 cm Gaussian lying obliquely on a wall reports its centre depth to every beam that crosses its edge. The LiDAR measures range along its own beam.</p></div>
+  <div><span class="micro">ii · Statistic</span><h3>Mean, median, first hit</h3><p>An expectation, a median and a first surface coexist. A faint floater in front of a wall drags the expectation into empty space long before the median notices.</p></div>
+  <div><span class="micro">iii · Gradient</span><h3>No push along the beam</h3><p>Neither depth term differentiates <span class="tex">z_i</span>. Geometry can change only by fading Gaussians or sliding footprints sideways, never by moving a Gaussian along the line of sight.</p></div>
+</div>
+
+<aside class="callout callout--watch" aria-label="What to watch in Figure 3"><p class="callout-label">What to watch</p><ol><li>Raise the floater’s opacity. The baseline’s expected depth slides into empty space while the measured return stays put.</li><li>Tilt the wall. The beam now meets the Gaussian away from its centre, and the proxy keeps reporting the centre depth.</li><li>Push the floater past one half. Every median, including ours, jumps to the floater. In the ray model that is exactly what the free-space term and the “contradicted” state are there to catch.</li></ol></aside>
+
+<figure class="fig l-mid" id="depth-fig">
+  <div class="fig-bar"><span>Where does depth land on one beam?</span><span class="tag">Interactive · synthetic</span></div>
+  <div class="widget">
+    <div class="scroll-x"><svg id="depth-svg" viewBox="0 0 720 300" role="img" aria-label="Opacity and transmittance along one LiDAR beam, with the measured return and three depth estimates"></svg></div>
+    <div class="widget-controls">
+      <label for="depth-alpha">Floater opacity <output id="depth-alpha-v">0.30</output></label><input id="depth-alpha" type="range" min="0" max="0.9" step="0.01" value="0.3">
+      <label for="depth-tilt">Wall tilt to the beam <output id="depth-tilt-v">45°</output></label><input id="depth-tilt" type="range" min="0" max="70" step="1" value="45">
+      <table class="readout" aria-live="polite"><thead><tr><th scope="col">Depth on this beam</th><th scope="col">m</th><th scope="col">vs ρ</th></tr></thead><tbody id="depth-readout"></tbody></table>
+    </div>
+  </div>
+  <figcaption><b>Figure 3.</b> A synthetic beam: a floater at 3 m and a wall whose Gaussian centre sits at 6 m, crossed 0.3 m from its centre. Top lane: opacity met along the beam. Bottom lane: transmittance <span class="tex">T</span>, with the one-half line. Markers: the measured return <span class="tex">\rho</span>, the baseline’s expected centre depth, the baseline’s median (a centre depth) and the ray model’s termination depth <span class="tex">\tau_{\mathrm{term}}</span>. Toy numbers chosen to show the mechanism, not measured.</figcaption>
+</figure>
+
+<aside class="callout callout--key" aria-label="Key takeaway"><p class="callout-label">Key takeaway</p><p>The shared Gaussians receive conflicting targets, and the cheapest way for the optimiser to reconcile them is to let appearance absorb the conflict. That is our explanation of the gap. It is falsifiable: if replacing the proxies does not move the result (Experiment 2), the explanation is wrong.</p></aside>
+
+<h3 class="subhead">Share the Gaussians, or split them?</h3>
+<p>Sensor-simulation work already renders both sensors natively, but keeps them apart. SplatAD <a href="#ref-13">[13]</a> gives the LiDAR its own spherical rasteriser and renders expected range in training but median range at inference; Uni-Gaussians <a href="#ref-14">[14]</a> rasterises cameras and ray-traces LiDAR; XSIM <a href="#ref-15">[15]</a> gives each Gaussian one opacity per sensor. SimULi <a href="#ref-17">[17]</a>, the closest work, supports fisheye cameras and arbitrary spinning LiDARs in one framework, observes that a single set of Gaussians trades PSNR against LiDAR accuracy as the depth-loss weight varies, and therefore splits the scene into a camera set and a LiDAR set tied by an anchoring loss.</p>
+<p>Those are dynamic driving simulators graded against the sensors themselves. For static metric reconstruction graded against independent TLS, we ask the opposite question: <strong>is the trade-off intrinsic to sharing one set of Gaussians, or an artefact of supervising two sensors through inconsistent measurement models?</strong></p>
+</section>
+
+<!-- ============================================================== 03 C1 -->
+<section class="section col" id="rays" aria-labelledby="h-rays">
+<p class="eyebrow"><span class="num">03</span>Contribution 1 · One ray model</p>
+<h2 id="h-rays">A fisheye pixel and a LiDAR beam are the same object</h2>
+<p>Treat every reading as what it physically is: a ray with its own origin and direction.</p>
+<div class="eq"><span class="tex tex-d">\begin{aligned}\text{camera pixel } u:&amp;\quad \bo=\text{camera centre},\quad \bd = R_{w\leftarrow c}\,\pi_c^{-1}(u)\\ \text{LiDAR return } k:&amp;\quad \bo_k=\text{origin at the return's own timestamp},\quad \bd_k=\text{beam},\quad \rho_k=\text{range}\end{aligned}</span></div>
+<p><span class="tex">\pi_c</span> is the calibrated fisheye model (equidistant on Oxford Spires). The whole valid image circle is used at native resolution and never resampled; there is no crop and no virtual depth camera.</p>
+
+<h3 class="subhead">Where a ray meets a Gaussian</h3>
+<div class="eq"><span class="tex tex-d">\begin{gathered}\tau_i^*=\frac{\bd^\top\Sigma_i^{-1}(\bmu_i-\bo)}{\bd^\top\Sigma_i^{-1}\bd}\\[6pt] D_i^2=(\bmu_i-\bo)^\top\Sigma_i^{-1}(\bmu_i-\bo)-\tau_i^{*2}\,\bd^\top\Sigma_i^{-1}\bd,\qquad a_i=\alpha_i\,e^{-\frac12 D_i^2}\end{gathered}</span></div>
+<aside class="callout callout--read" aria-label="Read it like this"><p class="callout-label">Read it like this</p><p>Stretch space with <span class="tex">\Sigma_i^{-1/2}</span> until the Gaussian becomes a round ball. Straight lines stay straight, so the ray is still a ray. In that stretched space <span class="tex">\tau_i^*</span> is just the foot of the perpendicular from the ball’s centre to the ray, and <span class="tex">D_i</span> is the length of that perpendicular. The ray passes closest to the Gaussian at <span class="tex">\tau_i^*</span>, and the Gaussian contributes opacity <span class="tex">a_i</span> according to how close.</p><p>No projection, no Jacobian, no affine approximation. This is the peak response of 3DGRT <a href="#ref-7">[7]</a>, and 3DGEER <a href="#ref-6">[6]</a> shows that it equals the closed-form integral of the 3D Gaussian along the ray.</p></aside>
+
+<aside class="callout callout--watch" aria-label="What to watch in Figure 4"><p class="callout-label">What to watch</p><ol><li>Slide the ray across the Gaussian. The proxy’s centre depth never moves; <span class="tex">\tau^*</span> follows the Gaussian’s surface.</li><li>Drag the morph to “whitened”. The ellipse becomes a circle, and <span class="tex">\tau^*</span> becomes an ordinary perpendicular foot.</li><li>Rotate the Gaussian so it lies obliquely to the ray. That is where centre depth and range disagree most.</li></ol></aside>
+
+<figure class="fig l-mid" id="white-fig">
+  <div class="fig-bar"><span>The ray response, seen in whitened space</span><span class="tag">Interactive · exact formula</span></div>
+  <div class="widget">
+    <div class="scroll-x"><svg id="white-svg" viewBox="0 0 640 360" role="img" aria-label="A 2D Gaussian, a ray, the peak point tau-star and the centre depth used by a proxy"></svg></div>
+    <div class="widget-controls">
+      <label for="w-offset">Ray offset <output id="w-offset-v">0.50 m</output></label><input id="w-offset" type="range" min="-1" max="1" step="0.01" value="0.5">
+      <label for="w-rot">Gaussian rotation <output id="w-rot-v">30°</output></label><input id="w-rot" type="range" min="0" max="180" step="1" value="30">
+      <label for="w-morph">World <span aria-hidden="true">⟷</span> whitened <output id="w-morph-v">0%</output></label><input id="w-morph" type="range" min="0" max="1" step="0.01" value="0">
+      <table class="readout" aria-live="polite"><tbody id="white-readout"></tbody></table>
+    </div>
+  </div>
+  <figcaption><b>Figure 4.</b> A 2D slice: one anisotropic Gaussian (scales 1.0 m and 0.22 m) and one ray. Violet: the peak <span class="tex">\tau^*</span> from the formula above; dashed: the perpendicular <span class="tex">D</span>, which is perpendicular only in whitened space; grey tick: the centre depth a proxy would report. Readouts are computed live from the equations above.</figcaption>
+</figure>
+
+<h3 class="subhead">One termination depth for both sensors</h3>
+<div class="eq"><span class="tex tex-d">T_i=\prod_{j\lt i}(1-a_j),\qquad k(\mathbf r):\;T_{k+1}\le\tfrac12\lt T_k,\qquad \tau_{\mathrm{term}}(\mathbf r)=\tau^*_{k(\mathbf r)}</span></div>
+<p>Sort the contributions by <span class="tex">\tau^*</span>, follow the transmittance down the ray, and stop at the first Gaussian after which at most half of the light is left. Its peak is the termination depth. A ray whose final transmittance stays above one half is a no-hit. Both sensors use this one number.</p>
+<aside class="callout callout--note" aria-label="Credit"><p><strong>Credit.</strong> This is the median depth of 2DGS <a href="#ref-18">[18]</a> and GS-LiDAR <a href="#ref-19">[19]</a>, also used by SplatAD at inference <a href="#ref-13">[13]</a> and formalised by Geometry-Grounded GS <a href="#ref-20">[20]</a>; RaDe-GS and GOF likewise replace centre depth with the ray–Gaussian intersection <a href="#ref-33">[33]</a> <a href="#ref-34">[34]</a>. We do not claim the definition. What changes is its role: the camera’s depth, the LiDAR’s predicted range, the first surface used for evaluation and the evidence of §04 become the same number.</p></aside>
+
+<h3 class="subhead">A gradient that pushes along the beam</h3>
+<div class="eq"><span class="tex tex-d">\frac{\partial\tau_k^*}{\partial\bmu_k}=\frac{\Sigma_k^{-1}\bd}{\bd^\top\Sigma_k^{-1}\bd}\qquad\Longrightarrow\qquad \bd^\top\frac{\partial\tau_k^*}{\partial\bmu_k}=1</span></div>
+<p>The identity on the right is the intuition: slide the terminating Gaussian one centimetre along the beam, and its termination depth slides one centimetre. A range residual therefore moves geometry along the line of sight, which repairs mismatch iii. For a flat Gaussian, <span class="tex">\Sigma^{-1}\bd</span> points mostly along its normal, so the push goes through the surface rather than across it.</p>
+
+<h3 class="subhead">What the LiDAR is asked to explain</h3>
+<div class="eq"><span class="tex tex-d">\mathcal L_{\mathrm{lidar}}=\underbrace{\psi_\delta\big(\tau_{\mathrm{term}}-\rho\big)}_{\text{stop where it returned}}\;+\;\lambda_{\mathrm{fs}}\underbrace{\big(1-T(\rho-\kappa\sigma_\rho)\big)}_{\text{arrive almost unattenuated}}</span></div>
+<p><span class="tex">\psi_\delta</span> is a Huber penalty and <span class="tex">T(\tau)</span> the transmittance accumulated up to range <span class="tex">\tau</span>. The first term asks the beam to terminate where it returned. The second asks that the space the laser has just crossed is empty up to a noise margin <span class="tex">\kappa\sigma_\rho</span>, the line-of-sight idea of Urban Radiance Fields <a href="#ref-22">[22]</a>. A beam without a return may optionally be asked to stay empty, <span class="tex">1-T(\tau_{\max})</span>. The camera keeps <span class="tex">\mathcal L_{\mathrm{rgb}}=(1-\lambda)\lVert C-\hat C\rVert_1+\lambda\,\text{D-SSIM}</span> with a per-exposure affine colour correction, and has no depth loss of its own: the LiDAR already shapes the surface that the camera rays composite.</p>
+
+<div class="table-wrap l-mid"><table class="tbl">
+<caption>What C1 borrows, and the one thing it claims.</caption>
+<thead><tr><th scope="col">Ingredient</th><th scope="col">Prior work</th><th scope="col">Claimed here</th></tr></thead>
+<tbody>
+<tr><th scope="row">Fisheye pixels as rays at native resolution</th><td>Fisheye-GS <a href="#ref-3">[3]</a>, 3DGUT <a href="#ref-4">[4]</a>, DirectFisheye-GS <a href="#ref-5">[5]</a>, 3DGEER <a href="#ref-6">[6]</a></td><td>No</td></tr>
+<tr><th scope="row">Exact ray–Gaussian response</th><td>3DGRT <a href="#ref-7">[7]</a>, 3DGEER <a href="#ref-6">[6]</a></td><td>No</td></tr>
+<tr><th scope="row">Median termination depth, <span class="tex">T=\tfrac12</span></th><td>2DGS <a href="#ref-18">[18]</a>, GS-LiDAR <a href="#ref-19">[19]</a>, SplatAD <a href="#ref-13">[13]</a>, Geometry-Grounded GS <a href="#ref-20">[20]</a></td><td>No</td></tr>
+<tr><th scope="row">LiDAR as a ray measurement with free space</th><td>DS-NeRF <a href="#ref-21">[21]</a>, Urban Radiance Fields <a href="#ref-22">[22]</a></td><td>No</td></tr>
+<tr class="claim"><th scope="row">Both sensors on one set of Gaussians through one termination depth, tested against the loss-weighting trade-off</th><td>None: SimULi and XSIM split the sensors instead</td><td><strong>Yes</strong>, as a hypothesis</td></tr>
+</tbody></table></div>
+
+<div class="table-wrap l-wide"><table class="tbl tbl-compare">
+<caption>Closest work that renders both sensors, and how each keeps them apart.</caption>
+<thead><tr><th scope="col">Method</th><th scope="col">Venue</th><th scope="col">Camera</th><th scope="col">LiDAR</th><th scope="col">How the sensors are kept apart</th><th scope="col">Graded against</th></tr></thead>
+<tbody>
+<tr><th scope="row">SplatAD <a href="#ref-13">[13]</a></th><td>CVPR 2025</td><td>pinhole raster</td><td>separate spherical raster</td><td>two rasterisers; expected range in training, median at inference</td><td>the sensors</td></tr>
+<tr><th scope="row">Uni-Gaussians <a href="#ref-14">[14]</a></th><td>arXiv 2025</td><td>raster</td><td>ray tracing with a BVH</td><td>two renderers</td><td>the sensors</td></tr>
+<tr><th scope="row">XSIM <a href="#ref-15">[15]</a></th><td>arXiv 2026</td><td>3DGUT, rolling shutter</td><td>spherical projection</td><td>one opacity per sensor on each Gaussian</td><td>the sensors</td></tr>
+<tr><th scope="row">UniGaussian <a href="#ref-16">[16]</a></th><td>arXiv 2024</td><td>pinhole + fisheye</td><td>supervision only</td><td>LiDAR is not rendered</td><td>images</td></tr>
+<tr><th scope="row">SimULi <a href="#ref-17">[17]</a></th><td>ICLR 2026</td><td>3DGUT, fisheye-capable</td><td>same rasteriser, any spinning LiDAR</td><td>two Gaussian sets tied by an anchoring loss</td><td>the sensors, dynamic driving</td></tr>
+<tr class="claim"><th scope="row">C1 (this work)</th><td>—</td><td>exact ray, native fisheye</td><td>exact ray</td><td>not kept apart: one ray model, one <span class="tex">\tau_{\mathrm{term}}</span></td><td>independent TLS, static scenes</td></tr>
+</tbody></table></div>
+
+<aside class="callout callout--key" aria-label="The claim"><p class="callout-label">The claim, stated so that it can fail</p><p>One set of Gaussians with one measurement model moves <em>outside</em> the photometric–metric trade-off curve that loss weighting traces, rather than to another point on it. If the C1 point lands on the curve, SimULi’s factorisation is the better representation, and C1 is reported as an implementation choice.</p><p>The threshold one half is the photometric median, while a LiDAR return is closer to “the first sufficiently reflective surface”. Sharing one threshold is therefore itself tested, at 0.3, 0.5 and 0.7.</p></aside>
+</section>
+
+<!-- ============================================================== 04 C2 -->
+<section class="section col" id="gate" aria-labelledby="h-gate">
+<p class="eyebrow"><span class="num">04</span>Contribution 2 · Evidence-gated optimisation</p>
+<h2 id="h-gate">Where the LiDAR has measured, geometry is a constraint, not a loss</h2>
+<p>The usual way to give a radiance field geometry is to add a loss: distortion <a href="#ref-24">[24]</a>, normal and planarity terms <a href="#ref-18">[18]</a> <a href="#ref-23">[23]</a>, depth and line-of-sight terms <a href="#ref-21">[21]</a> <a href="#ref-22">[22]</a>. Every one comes with a weight, and a weight picks one point on a trade-off:</p>
+<div class="eq"><span class="tex tex-d">\min_\theta\;\; f_{\mathrm{rgb}}(\theta)\;+\;\lambda\,f_{\mathrm{geo}}(\theta)</span></div>
+<p>For a fixed <span class="tex">\lambda</span>, the minimiser is where a straight line of slope <span class="tex">-\lambda</span> first touches the set of achievable <span class="tex">(f_{\mathrm{geo}},f_{\mathrm{rgb}})</span> pairs. Sweeping <span class="tex">\lambda</span> rolls that line around the set, so it only ever touches the convex hull; any stretch of the front that bulges outward is unreachable at every weight <a href="#ref-25">[25]</a>. A constraint, <span class="tex">\min f_{\mathrm{rgb}}\ \text{s.t.}\ f_{\mathrm{geo}}\le\varepsilon</span>, has no such blind spot. And a loss never removes a degree of freedom: the normal direction of a measured surface stays available to the photometric gradient, which can still buy appearance by moving the surface.</p>
+
+<figure class="fig l-mid" id="pareto-fig">
+  <div class="fig-bar"><span>What a weight can reach, and what a constraint can</span><span class="tag">Interactive · schematic front</span></div>
+  <div class="widget">
+    <div class="scroll-x"><svg id="pareto-svg" viewBox="0 0 640 380" role="img" aria-label="A non-convex Pareto front; the weighted-sum minimiser jumps across the dent while the constraint reaches it"></svg></div>
+    <div class="widget-controls">
+      <label for="p-lambda">Loss weight λ <output id="p-lambda-v">1.00</output></label><input id="p-lambda" type="range" min="-1.6" max="1.2" step="0.01" value="0">
+      <label for="p-eps">Constraint ε on <span class="tex">f_{\mathrm{geo}}</span> <output id="p-eps-v">0.50</output></label><input id="p-eps" type="range" min="0.05" max="0.95" step="0.01" value="0.5">
+      <p class="widget-note" id="pareto-note" aria-live="polite"></p>
+    </div>
+  </div>
+  <figcaption><b>Figure 5.</b> A schematic Pareto front of photometric error against geometric error; lower-left is better. Blue: the point a weighted loss selects for the current <span class="tex">\lambda</span>, with its supporting line. Violet: the point the constraint <span class="tex">f_{\mathrm{geo}}\le\varepsilon</span> selects. Hatched: the stretch no weight ever selects. Not measured data; the argument is Das &amp; Dennis <a href="#ref-25">[25]</a>.</figcaption>
+</figure>
+
+<h3 class="subhead">Evidence, counted along the same rays</h3>
+<p>Because both sensors now reach the same Gaussians through <span class="tex">\tau_{\mathrm{term}}</span>, the LiDAR pass can attribute every return. For each beam with a return <span class="tex">\rho</span>, Gaussian <span class="tex">i</span> accumulates</p>
+<div class="eq"><span class="tex tex-d">\begin{aligned} h_i &amp;\mathrel{+}= 1 &amp;&amp; \text{if } i=k(\mathbf r)\ \text{and}\ |\tau_i^*-\rho|\le\kappa\sigma_\rho\\ f_i &amp;\mathrel{+}= a_iT_i &amp;&amp; \text{if } \tau_i^*\lt\rho-\kappa\sigma_\rho\\ n_i &amp;\mathrel{+}= 1 &amp;&amp; \text{if } T_i\gt\epsilon \end{aligned}</span></div>
+<ul class="defs"><li><b>Hit</b> <span class="tex">h_i</span>: the Gaussian is the surface the beam returned from.</li><li><b>Violation</b> <span class="tex">f_i</span>: it blocks space the beam has proved empty, weighted by how much light it took.</li><li><b>Observation</b> <span class="tex">n_i</span>: the beam reached it at all.</li></ul>
+<p>Every 100 steps an exponential moving average of <span class="tex">(h_i,f_i,n_i)</span> assigns one of three states:</p>
+<div class="states l-mid">
+  <div class="state anchored"><span class="glyph" aria-hidden="true">◆</span><b>Anchored</b><span class="tex">n_i\ge n_{\min}\ \wedge\ h_i/n_i\ge\eta_h</span><small>measured, and it is the surface</small></div>
+  <div class="state contradicted"><span class="glyph" aria-hidden="true">✕</span><b>Contradicted</b><span class="tex">f_i/n_i\ge\eta_f\ \wedge\ h_i/n_i\lt\eta_h</span><small>sits where the laser saw nothing</small></div>
+  <div class="state unobserved"><span class="glyph" aria-hidden="true">○</span><b>Unobserved</b><span class="tex">n_i\lt n_{\min}</span><small>the LiDAR is silent here</small></div>
+</div>
+<p class="fine center">Anything else is treated as unobserved at a reduced learning rate.</p>
+
+<h3 class="subhead">The gate</h3>
+<div class="eq"><span class="tex tex-d">\Delta\bmu_i^{\mathrm{rgb}}\;\leftarrow\;\big(I-\bn_i\bn_i^{\top}\big)\,\Delta\bmu_i^{\mathrm{rgb}},\qquad s_{i,\min}\le\sigma_\rho</span></div>
+<p>For an anchored Gaussian with normal <span class="tex">\bn_i</span> (its shortest axis), the LiDAR’s own update is left unchanged and the photometric update of its position is projected onto the tangent plane. <span class="tex">I-\bn\bn^\top</span> keeps every motion along the surface and deletes motion through it: appearance may still slide a Gaussian along the wall, but may no longer pull it off. Its normal scale is clamped to the sensor noise (<span class="tex">\sigma_\rho\approx</span> 3 cm for the Hesai QT64), its rotation is bounded per step, and it is split only within the tangent plane. A contradicted Gaussian has its opacity decayed and is pruned below a threshold; it is never cloned. An unobserved Gaussian is optimised and densified exactly as in 3DGS.</p>
+
+<figure class="fig l-mid" id="gatefig">
+  <div class="fig-bar"><div class="seg seg-sm" role="group" aria-label="Gaussian state"><button type="button" data-state="anchored" aria-pressed="true"><b>Anchored</b></button><button type="button" data-state="unobserved" aria-pressed="false"><b>Unobserved</b></button><button type="button" data-state="contradicted" aria-pressed="false"><b>Contradicted</b></button></div><span class="tag">Interactive · schematic</span></div>
+  <div class="widget">
+    <div class="scroll-x"><svg id="gate-svg" viewBox="0 0 600 330" role="img" aria-label="A Gaussian on a wall, its photometric position update and what the gate keeps"></svg></div>
+    <div class="widget-controls">
+      <label for="g-dir">Direction of the photometric update <output id="g-dir-v">40°</output></label><input id="g-dir" type="range" min="0" max="359" step="1" value="40">
+      <p class="widget-note" id="gate-note" aria-live="polite"></p>
+    </div>
+  </div>
+  <figcaption><b>Figure 6.</b> What the photometric loss may move, by state. Blue: the photometric position update; solid where it is applied, dashed where the gate removes it. Orange: the LiDAR update, never gated. Schematic geometry.</figcaption>
+</figure>
+
+<aside class="callout callout--key" aria-label="Key takeaway"><p class="callout-label">Key takeaway</p><p>No weight is tuned. The gate removes one degree of freedom from the photometric loss where, and only where, the LiDAR measured it. It is also only definable because <span class="tex">\tau_{\mathrm{term}}</span> is shared: without C1 the counters would mix three depth statistics.</p></aside>
+
+<h3 class="subhead">The closest work, and the prediction that separates us</h3>
+<p>EnerGS <a href="#ref-26">[26]</a> already labels LiDAR evidence in three states and already decouples Gaussian positions from the photometric loss, so neither idea is new here. The difference is granularity and where the evidence comes from:</p>
+<div class="table-wrap l-mid"><table class="tbl">
+<thead><tr><th scope="col"></th><th scope="col">EnerGS <a href="#ref-26">[26]</a></th><th scope="col">C2 (this work)</th></tr></thead>
+<tbody>
+<tr><th scope="row">Evidence</th><td>LiDAR voxel grid: occupied, free, unknown</td><td>per-ray counts from the termination depth shared with the camera</td></tr>
+<tr><th scope="row">When computed</th><td>once, at initialisation</td><td>every 100 steps, during training</td></tr>
+<tr><th scope="row">What the photometric loss may move</th><td>no Gaussian centre, anywhere</td><td>everything except the normal of anchored Gaussians</td></tr>
+<tr><th scope="row">Where the LiDAR is silent</th><td>a weak attractor, about 1/16 of the occupied stiffness in the official defaults; positions stall</td><td>ordinary photometric optimisation</td></tr>
+<tr><th scope="row">Densification</th><td>photometric</td><td>evidence-aware: in-plane split; contradicted never cloned</td></tr>
+<tr><th scope="row">Camera · ground truth</th><td>pinhole · voxel metrics</td><td>native fisheye · independent TLS</td></tr>
+</tbody></table></div>
+<p>Other work constrains rather than reweights, but coarsely or with another signal. GeoP-Calib <a href="#ref-27">[27]</a> stops photometric gradients to all means and covariances during extrinsic calibration; Peng et al. <a href="#ref-28">[28]</a> constrain camera parameters with barriers; DirectFisheye-GS’s cross-view optimisation <a href="#ref-5">[5]</a> constrains Gaussians with photometric agreement between views, photometry restraining photometry. The gate acts per Gaussian and per degree of freedom, only where a measurement exists.</p>
+<aside class="callout callout--predict" aria-label="Falsifiable prediction"><p class="callout-label">Falsifiable prediction</p><p>In regions the cameras see but the LiDAR never returns from, C2’s completeness against TLS should exceed EnerGS’s. If it does not, C2 has no measurable difference from its closest neighbour and is reported as an engineering choice on top of C1.</p></aside>
+</section>
+
+<!-- ============================================================== 05 C3 -->
+<section class="section col" id="cost" aria-labelledby="h-cost">
+<p class="eyebrow"><span class="num">05</span>Contribution 3 · Implementation</p>
+<h2 id="h-cost">Faithful, at no extra cost</h2>
+<p>Exact ray methods are usually assumed to be slow: 3DGRT <a href="#ref-7">[7]</a> builds a BVH, and 3DGEER <a href="#ref-6">[6]</a> showed that exact responses can approach rasterisation speed without one. Our trainer already carries most of the rasterisation lineage’s accelerations: GPU-resident structure-of-arrays storage, tile binning with warp-cooperative duplication, radix sorting, a selective Adam that updates only visible Gaussians <a href="#ref-29">[29]</a>, fused SSIM and a warp-shuffle backward pass. The claim of C3 is deliberately narrow: <strong>C1 and C2 do not need to remove any of them.</strong></p>
+
+<h3 class="subhead">Why the exact response is cheap</h3>
+<p>Everything in <span class="tex">\tau^*</span> and <span class="tex">D^2</span> that does not depend on the pixel is computed once per Gaussian and sensor origin, next to the 3D covariance that preprocessing already builds:</p>
+<div class="eq"><span class="tex tex-d">\mathbf v_i=\Sigma_i^{-1}(\bmu_i-\bo),\qquad c_i=(\bmu_i-\bo)^\top\mathbf v_i</span></div>
+<p>For each pixel–Gaussian pair only two dot products and a division remain:</p>
+<div class="eq"><span class="tex tex-d">b=\bd^\top\mathbf v_i,\quad q=\bd^\top\Sigma_i^{-1}\bd\qquad\Longrightarrow\qquad \tau_i^*=\frac{b}{q},\qquad D_i^2=c_i-\frac{b^2}{q}</span></div>
+<p>With <span class="tex">\Sigma_i^{-1}</span> symmetric and the six products <span class="tex">d_jd_k</span> of a pixel’s direction formed once outside the Gaussian loop, <span class="tex">q</span> is six fused multiply-adds. The cost that does grow is the number of pixels: a native Oxford fisheye frame carries about 2.9× the pixels of the official pinhole proxy. We expect that, not the response, to dominate any slowdown; this is a derivation, not a measurement.</p>
+
+<figure class="fig l-mid" id="kernel-fig">
+  <div class="fig-bar"><div class="seg seg-sm" role="group" aria-label="Highlight kernels touched by"><button type="button" data-k="all" aria-pressed="true"><b>All</b></button><button type="button" data-k="c1" aria-pressed="false"><b>Touched by C1</b></button><button type="button" data-k="c2" aria-pressed="false"><b>Touched by C2</b></button></div><span class="tag">Change map · planned</span></div>
+  <div class="kernel-map" id="kernel-map">
+    <div class="kcol"><span class="micro">Unchanged</span>
+      <div class="kchip keep">GPU-resident SoA &amp; compaction</div><div class="kchip keep">Tile binning, warp-cooperative duplication</div><div class="kchip keep">Bounded radix sort</div><div class="kchip keep">Fused SSIM</div><div class="kchip keep">Image upload, scheduler, initialisation</div></div>
+    <div class="kcol"><span class="micro">Small change</span>
+      <div class="kchip small" data-by="c1">Preprocess: store <span class="tex">\Sigma^{-1},\mathbf v,c</span>; angular tile bound through <span class="tex">\pi_c</span>; sort key = distance from origin</div>
+      <div class="kchip small" data-by="c2">Adam: one gate branch in the image step; normal-scale clamp in fused post-processing</div>
+      <div class="kchip small" data-by="c2">Maintenance: prune contradicted, split anchored in-plane</div></div>
+    <div class="kcol"><span class="micro">Changed</span>
+      <div class="kchip change" data-by="c1">RGB raster: ray response forward; backward keeps warp-shuffle with about 14 instead of 9 gradient components</div>
+      <div class="kchip change" data-by="c1 c2">LiDAR raster: one warp per query, range along the beam, warp ballot finds <span class="tex">T\le\tfrac12</span>, early stop after termination, evidence counters in the same pass</div></div>
+    <div class="kcol"><span class="micro">Removed or off</span>
+      <div class="kchip off" data-by="c1">Median-depth consistency regulariser (no longer needed)</div><div class="kchip off">Pose &amp; distortion optimisation (off by protocol)</div></div>
+  </div>
+  <figcaption><b>Figure 7.</b> Where C1 and C2 touch the existing trainer. The LiDAR’s virtual camera survives only as a binning frame. The camera-axis sort key is replaced because camera depth turns negative beyond 90° off-axis. No BVH is built; as in 3DGEER and StopThePop <a href="#ref-6">[6]</a> <a href="#ref-31">[31]</a>, order along a ray still follows a per-Gaussian key. A plan, not yet implemented.</figcaption>
+</figure>
+<p>Related accelerations are credited rather than claimed: Taming 3DGS <a href="#ref-29">[29]</a> for budgets and sparse Adam, Faster-GS <a href="#ref-30">[30]</a> for the restructured backward pass and fused optimiser, StopThePop <a href="#ref-31">[31]</a> for sorting. Unlike SplatAD <a href="#ref-13">[13]</a>, the LiDAR reuses the camera’s binning and response instead of a second rasteriser.</p>
+<aside class="callout callout--key" aria-label="Key takeaway"><p class="callout-label">Key takeaway</p><p>The cost claim is relative, because the trainer’s speed is inherited: time to reach the proxy pipeline’s final quality should be at most 1.2× that of R1 on the same RTX 5090. Above 1.2× the claim is dropped and the slowdown reported as an implementation detail.</p></aside>
+</section>
+
+<!-- ============================================================== 06 PLAN -->
+<section class="section col" id="plan" aria-labelledby="h-plan">
+<p class="eyebrow"><span class="num">06</span>Validation</p>
+<h2 id="h-plan">Four questions, each with the answer that would stop us</h2>
+<p>Validation runs on one site before anything is scaled: Oxford Spires Keble-04 <a href="#ref-2">[2]</a>, to our knowledge the only public dataset that combines fisheye colour cameras (three 1440 × 1080 equidistant), a synchronised mobile LiDAR (Hesai QT64) and independent survey-grade geometry (TLS at 1 cm). Every method trains on one RTX 5090 at equal wall-clock with three seeds, uses the same per-exposure appearance model, keeps poses and distortion fixed, and is scored identically: about 46 training runs in all.</p>
+<aside class="callout callout--note" aria-label="One ruler for all methods"><p><strong>One ruler for all methods.</strong> Geometry is extracted the same way for every splatting method: back-project the termination depth of all training rays, drop rays whose final transmittance stays above one half or whose range exceeds 60 m, subsample at a fixed stride, then score accuracy, completeness and F-score at 5 and 10 cm against TLS. The <em>input-LiDAR</em> row accumulates the training scans themselves. The <em>blind region</em> holds TLS points with no training return within 10 cm that at least two training cameras see. Novel views are scored in-sequence and out-of-sequence on the official splits. Intervals use a paired bootstrap grouped by timestamp; differences below one seed standard deviation are not interpreted.</p></aside>
+
+<figure class="fig l-wide plan" id="plan-fig">
+  <div class="plan-tabs" role="tablist" aria-label="Validation steps">
+    <button role="tab" id="pt-prep" aria-controls="pp-prep" aria-selected="true"><span>Prep</span><b>A fair ruler</b></button>
+    <button role="tab" id="pt-q1" aria-controls="pp-q1" aria-selected="false" tabindex="-1"><span>Q1 · gate G1</span><b>Does the gap exist?</b></button>
+    <button role="tab" id="pt-q2" aria-controls="pp-q2" aria-selected="false" tabindex="-1"><span>Q2 · gate G2</span><b>Does C1 leave the curve?</b></button>
+    <button role="tab" id="pt-q3" aria-controls="pp-q3" aria-selected="false" tabindex="-1"><span>Q3 · gate G3</span><b>Constraint vs. loss</b></button>
+    <button role="tab" id="pt-q4" aria-controls="pp-q4" aria-selected="false" tabindex="-1"><span>Q4</span><b>What does it cost?</b></button>
+  </div>
+  <div class="plan-panel" role="tabpanel" id="pp-prep" aria-labelledby="pt-prep" tabindex="0">
+    <div><h3>Fix the instruments before reading any number</h3><p>Two items repair the baseline itself and are never counted as gains: pass the transmittance and termination outputs the LiDAR kernel already computes into the trainer, and make its normalisation match the camera branch.</p><ul><li>Freeze first-surface extraction for all methods.</li><li>Run the official TLS evaluation and reproduce one published row as a self-check.</li><li>Build the input-LiDAR accumulation and the blind-region mask.</li><li>Unify the protocol; turn on the trainer’s existing profiling tags.</li><li>Adapt 3DGUT+L: gsplat’s unscented-transform path <a href="#ref-32">[32]</a> on the raw fisheye with a valid mask, LiDAR initialisation and a depth loss.</li></ul></div>
+    <dl class="plan-facts"><div><dt>Runs</dt><dd>0</dd></div><div><dt>Output</dt><dd>a ruler every later table uses</dd></div></dl>
+  </div>
+  <div class="plan-panel" role="tabpanel" id="pp-q1" aria-labelledby="pt-q1" tabindex="0">
+    <div><h3>Does the gap survive a native camera?</h3><p>The cheapest experiment and the one that can veto everything. Rows: <b>input LiDAR</b> (the training scans, not trained), <b>R1</b> (our proxy pipeline), <b>3DGUT+L</b> (native fisheye plus LiDAR depth loss, the “camera is already fixed” explanation).</p><p class="pass"><b>Pass</b> if the input LiDAR beats the better splatting row by at least 0.03 F@5 cm, beyond the bootstrap interval.</p><p class="fail"><b>If it fails</b>, the metric claim is withdrawn and the work is re-scoped to fisheye fidelity and efficiency.</p></div>
+    <dl class="plan-facts"><div><dt>Runs</dt><dd>6</dd></div><div><dt>Table</dt><dd>Acc, Comp, F@5, F@10, blind completeness, PSNR in / out</dd></div></dl>
+  </div>
+  <div class="plan-panel" role="tabpanel" id="pp-q2" aria-labelledby="pt-q2" tabindex="0">
+    <div><h3>Does one ray model move off the trade-off curve?</h3><p>Loss weighting moves a method <em>along</em> a curve: more LiDAR weight buys F-score with PSNR, as SimULi reports. So the two cheap explanations, <b>3DGUT+L</b> and <b>R1+∂D/∂z</b> (restore only the missing gradient), are each traced at LiDAR weights ×0.3, ×1 and ×3. Against them: the <b>camera half</b> and the <b>LiDAR half</b> (one proxy replaced each), and full <b>C1</b> at thresholds 0.3, 0.5 and 0.7.</p><p class="pass"><b>Pass</b> if C1 beats the better cheap explanation by more than one seed standard deviation in out-of-sequence PSNR, or by at least 0.02 F@5 cm, <em>and</em> lies outside both curves. “Unification” is claimed only if C1 also beats the better half; otherwise the text names the half that carries the gain.</p><p class="fail"><b>If it fails</b>, C1 becomes an implementation choice and C2 leads the paper.</p></div>
+    <dl class="plan-facts"><div><dt>Runs</dt><dd>about 24, reusing Q1’s six</dd></div><div><dt>Figure</dt><dd>PSNR out vs. F@5, curves vs. points</dd></div></dl>
+  </div>
+  <div class="plan-panel" role="tabpanel" id="pp-q3" aria-labelledby="pt-q3" tabindex="0">
+    <div><h3>Does the gate beat a loss, and beat EnerGS?</h3><p>All built on C1 with the same appearance model, so the only difference is how LiDAR evidence enters the optimiser: a <b>soft range loss</b> at λ ∈ {0.1, 0.3, 1, 3}, <b>EnerGS</b> reimplemented in our renderer with its official defaults including global zeroing, and <b>C1+C2</b>.</p><p class="pass"><b>Test A:</b> at C2’s F@5, the soft-loss front’s PSNR is lower beyond the interval. <b>Test B:</b> C2’s blind-region completeness beats EnerGS’s by more than one seed standard deviation.</p><p class="fail">Both pass: C2 leads. Only A: an engineering choice on top of C1. Only B: the claim becomes blind-region completion. Neither: a good operating point, not a contribution.</p></div>
+    <dl class="plan-facts"><div><dt>Runs</dt><dd>about 10</dd></div><div><dt>Figure</dt><dd>soft-loss front, EnerGS, C2; blind-region inset</dd></div></dl>
+  </div>
+  <div class="plan-panel" role="tabpanel" id="pp-q4" aria-labelledby="pt-q4" tabindex="0">
+    <div><h3>Does measurement consistency cost time?</h3><p><b>R1</b>, <b>C1</b> and <b>C1+C2</b>, three runs each on the same card; per-step time split by the trainer’s profiling tags, I/O reported separately. New kernels must first pass finite-difference gradient checks on synthetic scenes.</p><p class="pass"><b>Pass</b>: time to reach both R1’s final out-of-sequence PSNR and its final F@5 is at most 1.2× R1 (“no extra cost”); at most 1.0× is “faster”, stated with Gaussian counts.</p><p class="fail"><b>If it fails</b>, re-measure with pixels per step matched to R1, then report the slowdown honestly as an implementation detail.</p></div>
+    <dl class="plan-facts"><div><dt>Runs</dt><dd>9, partly shared</dd></div><div><dt>Table</dt><dd>raster forward / backward / other, step, time to target, #Gaussians</dd></div></dl>
+  </div>
+  <figcaption><b>Figure 8.</b> The validation order. Each step names its rows, the rule that passes it and what happens if it fails. Use the arrow keys to move between steps.</figcaption>
+</figure>
+<aside class="callout callout--key" aria-label="Key takeaway"><p class="callout-label">Key takeaway</p><p>The order is fixed because the contributions depend on each other. C2’s evidence is defined by C1’s termination depth, and C3 carries only what C1 and C2 change. If G1 fails, nothing downstream is run.</p></aside>
+</section>
+
+<!-- ============================================================== 07 BASELINE -->
+<section class="section col" id="baseline" aria-labelledby="h-base">
+<p class="eyebrow"><span class="num">07</span>Where we start</p>
+<h2 id="h-base">A complete baseline system: the R1 of every table</h2>
+<p>The proxy pipeline that this page criticises is our own working system. Stages 0–10 run from raw dual-fisheye and LiDAR captures to a Gaussian scene in the browser. Stage 8 projects each fisheye image into three 1024 × 1024, 90° pinhole views; Stage 9 trains SH0 Gaussians with paired RGB and LiDAR updates on a native CUDA backend whose parameters and Adam state stay GPU-resident <a href="#ref-p1">[P1]</a> <a href="#ref-p4">[P4]</a>. It is fast, and it is the baseline every contribution has to beat.</p>
+<figure class="fig l-wide overview" id="overview"><a class="overview-link" href="./assets/overview.svg" target="_blank" rel="noopener" aria-label="Open the full-size system overview"><img src="./assets/overview.svg" width="1440" height="570" loading="lazy" alt="System overview: dual-fisheye imagery and LiDAR feed preparation; paired RGB and LiDAR updates optimise a shared SH0 Gaussian scene with pruning and densification; PLY is compressed to SOG and displayed in SuperSplat."></a><figcaption><b>Figure 9.</b> The baseline pipeline at a glance. Original method illustration, not a reconstruction result. <a class="figure-download" href="./assets/overview.svg" download>Download SVG ↗</a></figcaption></figure>
+<p>One complete run, <strong>133957</strong>, went through Stages 0–10 from raw inputs between 2 and 3 October 2026 <a href="#ref-p3">[P3]</a>.</p>
+<div class="run-stats l-mid"><div><strong>7,770</strong><span>1024² training views</span></div><div><strong>204,249</strong><span>paired LiDAR / RGB updates</span></div><div><strong>10.29<span>M</span></strong><span>Gaussians in the SOG export</span></div><div><strong>106.13</strong><span>MiB · compressed SOG</span></div></div>
+<figure class="fig l-mid results"><div class="fig-bar"><span>Frozen-checkpoint evaluation of run 133957</span><span class="tag">Training views only</span></div><div class="results-grid"><div class="quality-plot"><h3>PSNR on the same training views</h3><p class="fine">The toned branch applies learned per-image appearance.</p><div class="bar-label"><span>Raw RGB</span><strong>19.8594 <small>dB</small></strong></div><div class="track"><div class="bar raw" style="--value:66.198%"></div></div><div class="bar-label"><span>Toned RGB</span><strong>25.3347 <small>dB</small></strong></div><div class="track"><div class="bar toned" style="--value:84.449%"></div></div><div class="plot-axis"><span>0</span><span>10</span><span>20</span><span>30 dB</span></div></div><div class="metric-table-wrap"><table><caption>Reported per-view equal-weight means</caption><thead><tr><th scope="col">Output</th><th scope="col">PSNR ↑</th><th scope="col">SSIM ↑</th></tr></thead><tbody><tr><th scope="row">Raw RGB</th><td>19.8594</td><td>0.777927</td></tr><tr><th scope="row">Toned RGB</th><td>25.3347</td><td>0.809903</td></tr></tbody></table><p class="fine">7,770 views · frozen checkpoint<br>Recorded training time: approximately 1,489 s.</p></div></div><figcaption><b>Figure 10.</b> Raw and toned outputs share the learned cameras and distortion; only toned applies the appearance model; no test-time fitting. These are training-view scores of our own rig, not held-out evaluation and not a comparison with any other method. <a href="#ref-p3">[P3]</a></figcaption></figure>
+<aside class="callout callout--warn" aria-label="What these numbers do not establish"><p class="callout-label">What these numbers do not establish</p><p>Training-view fitting is not held-out generalisation, toned metrics are not SOG viewer scores, and this run says nothing about geometry against ground truth. That is exactly why the validation plan moves to Oxford Spires, where TLS exists. Under that dataset’s original protocol, R1 reached 23.67 dB in-sequence and 21.75 dB out-of-sequence on Keble-04 in a single run at an unequal budget: a competitive starting point, not a result.</p></aside>
+<details class="upstream"><summary><span><span class="micro">Upstream, in brief</span>What happens before Gaussian training?</span><span aria-hidden="true">+</span></summary><div class="details-body"><p>Stages 0–4 handle decoding, dynamic-point filtering, synchronisation, image/pose pairing and person masks. Stages 5–7 perform feature matching, triangulation and joint visual–LiDAR geometry optimisation. Stage 8 projects each fisheye image into three 1024 × 1024, 90° pinhole views, which are different from Stage 5’s five-view feature-extraction projections. Stage 9 consumes the prepared views with the filtered LiDAR map and trajectory. <a href="#ref-p4">[P4]</a></p></div></details>
+<details><summary><span><span class="micro">Delivery, in brief</span>How does a trained scene reach the browser?</span><span aria-hidden="true">+</span></summary><div class="details-body"><p>Stage 10 merges the main and environment Gaussians, writes standard little-endian Gaussian PLY, converts it to the official SOG format and emits a self-hostable SuperSplat viewer. SOG quantises attributes and does not carry the checkpoint’s per-image appearance or distortion, so browser quality needs its own evaluation. The documented transform is (x, y, z) → (−x, z, y), with the initial camera transformed consistently. <a href="#ref-p2">[P2]</a></p></div></details>
+</section>
+
+<!-- ============================================================== 08 EXPLORE -->
+<section class="section col" id="explore" aria-labelledby="explore-heading">
+  <p class="eyebrow"><span class="num">08</span>Explore scenes</p>
+  <h2 id="explore-heading">Step inside a Gaussian scene</h2>
+  <p>Choose a published example, or open a Gaussian <strong>PLY</strong> from your device. The model is rendered here in the browser. Local files stay on your device and are not uploaded.</p>
+  <div class="scene-browser l-wide" id="scene-browser">
     <div class="scene-browser-toolbar">
       <form id="scene-form"><label for="scene-select">Examples</label><select id="scene-select" disabled><option>Loading example list…</option></select><button class="btn primary" id="load-example" disabled type="submit">Load example</button></form>
       <button class="btn" id="open-local" type="button">Open local PLY</button><input id="local-model" type="file" accept=".ply,.sog" hidden>
@@ -64,20 +359,85 @@
     <div class="scene-browser-bottom"><p id="scene-status" role="status" aria-live="polite" data-state="empty">No model loaded.</p><div class="scene-actions"><button id="reset-scene" type="button" disabled>Reset view</button><button id="close-scene" type="button" disabled>Unload</button><button id="fullscreen-scene" type="button">Fullscreen</button></div></div>
     <p class="scene-description" id="scene-description">Examples are added manually. No reconstruction result is preloaded or simulated.</p>
   </div>
-  <div class="prose scene-instructions"><p class="fine">Drag to orbit · right-drag to pan · scroll to zoom. Click inside the viewer before using its keyboard controls. Large PLY files can require substantial browser memory.</p>
+  <div class="scene-instructions"><p class="fine">Drag to orbit · right-drag to pan · scroll to zoom. Click inside the viewer before using its keyboard controls. Large PLY files can require substantial browser memory.</p>
     <details><summary>Open a model link <span aria-hidden="true">+</span></summary><form id="model-url-form" class="model-url-form"><label for="model-url">Public HTTPS link to a Gaussian PLY or SOG</label><div><input id="model-url" type="url" placeholder="https://your-storage.example/scene.ply" required><button class="btn" type="submit">Open</button></div><p class="fine">Use a direct file URL, not a GitHub file-preview page. External hosting must allow cross-origin access.</p></form></details>
-    <details><summary>Add your own published examples <span aria-hidden="true">+</span></summary><div class="details-body"><p>Place an authorized model in <code>website/examples/your-scene/scene.ply</code>, then add its name and URL to <code>website/examples/scenes.json</code>. Push to <code>main</code> to publish it.</p><p><a href="https://github.com/NIZAHO/3dgs-page/blob/main/website/examples/README.md">Example configuration and model preparation ↗</a></p><p class="fine">Opening a local file only previews it in this browser; it does not publish it for other visitors.</p></div></details>
+    <details><summary>Add your own published examples <span aria-hidden="true">+</span></summary><div class="details-body"><p>Place an authorised model in <code>website/examples/your-scene/scene.ply</code>, then add its name and URL to <code>website/examples/scenes.json</code>. Push to <code>main</code> to publish it.</p><p><a href="https://github.com/NIZAHO/3dgs-page/blob/main/website/examples/README.md">Example configuration and model preparation ↗</a></p><p class="fine">Opening a local file only previews it in this browser; it does not publish it for other visitors.</p></div></details>
   </div>
 </section>
 
-<section class="chapter" id="delivery"><div class="prose"><p class="eyebrow">05 / Browser delivery</p><h2>A portable scene.<br>Not the entire training state.</h2><p>Stage 10 combines the main and environment Gaussians, converts the model to the official SOG format, and emits a self-hostable SuperSplat Viewer. The native model uses standard little-endian Gaussian PLY, which can also be opened directly in the embedded viewer. SOG quantizes the Gaussian attributes; the browser uses the exported scene without per-image checkpoint corrections. <a href="#ref-2">[2]</a></p></div>
-<figure class="figure mid"><div class="delivery-flow"><div><span class="micro">Native model</span><strong>PLY</strong><small>Main + environment<br>SH0 Gaussian parameters</small></div><span class="flow-arrow" aria-hidden="true">→</span><div><span class="micro">Portable asset</span><strong>SOG</strong><small>Lossy attribute encoding<br>Retained Gaussian count</small></div><span class="flow-arrow" aria-hidden="true">→</span><div><span class="micro">Browser</span><strong>SuperSplat</strong><small>Client-side GPU renderer<br>Static web delivery</small></div></div><div class="delivery-bottom"><span>Not included in SOG</span><p>Per-image appearance · per-image distortion · full optimizer state</p></div><figcaption><b>Figure 5.</b> Training and delivery are separate contracts. For the documented SH0 export, compression used CPU workers; this is distinct from GPU rendering in the browser. <a href="#ref-2">[2]</a></figcaption></figure>
-<div class="prose"><details><summary>Coordinate and checkpoint boundaries <span aria-hidden="true">+</span></summary><div class="details-body"><p>The documented SOG publishing transform is (x, y, z) → (−x, z, y), with the initial camera transformed consistently. SOG does not include the checkpoint's appearance or distortion fields. The native checkpoint does not contain the full Gaussian Adam state and scheduler, so it is not an exact-resume training checkpoint. <a href="#ref-1">[1]</a> <a href="#ref-2">[2]</a></p></div></details></div>
+<!-- ============================================================== 09 SCOPE -->
+<section class="section col" id="scope" aria-labelledby="h-scope">
+<p class="eyebrow"><span class="num">09</span>Scope</p>
+<h2 id="h-scope">What this page does and does not show</h2>
+<div class="scope-grid l-mid">
+  <div><span class="micro">Shown</span><ul><li>A diagnosis read from our baseline’s code and from published numbers.</li><li>Three contributions with their mathematics, the prior work each builds on, and the one thing each claims.</li><li>The experiments, pass rules and fall-backs that will decide each claim.</li><li>A working baseline system and one recorded run on our own rig.</li></ul></div>
+  <div><span class="micro">Not shown</span><ul><li>Any result of C1, C2 or C3; nothing here has been run yet.</li><li>Any comparison against another method.</li><li>Held-out or geometric quality of the recorded run.</li></ul></div>
+</div>
+<h3 class="subhead">Known limitations</h3>
+<ul class="limits">
+<li><b>Calibration and timing.</b> One shared set of Gaussians must absorb residual extrinsic and timing errors between the sensors. SimULi attributes the camera–LiDAR trade-off precisely to such errors <a href="#ref-17">[17]</a>; a static handheld rig does not escape this merely by being static. Sensitivity to extrinsic and time perturbations will be reported.</li>
+<li><b>LiDAR physics.</b> Beam divergence, multiple returns, glass and specular surfaces violate a single termination, and one threshold may not suit both sensors; only three values are tested.</li>
+<li><b>Ordering.</b> Responses are exact per Gaussian, but the order along a ray follows a per-Gaussian sort key.</li>
+<li><b>Scope.</b> Static scenes with given poses. Dynamic objects, sensor simulation (intensity, ray drop) and pose estimation are out of scope.</li>
+<li><b>Evidence.</b> Validation is single-site. Generality across sites, LiDAR models and fisheye models is still to be shown.</li>
+</ul>
 </section>
-<section class="chapter resources" id="resources"><div class="prose"><p class="eyebrow">06 / Implementation &amp; sources</p><h2>Follow the implementation.</h2><p>The system integrates data preparation, reconstruction, training, and publication. The native training backend reuses the pinned <code>3dgs_CUDA</code> Linux revision; project-specific interfaces and experiments are recorded separately. The backend provenance identifies the reused components and the project-specific changes. <a href="#ref-5">[5]</a></p><div class="resource-links"><a class="btn primary" href="https://github.com/NIZAHO/3dgs">Implementation ↗</a><a class="btn" href="https://github.com/NIZAHO/3dgs-page">Page source ↗</a><a class="btn" href="./assets/overview.svg" download>Overview SVG ↓</a></div><p class="fine">The project repository and implementation-document links may require access. This project page is public.</p><ol class="references"><li id="ref-1"><a href="https://github.com/NIZAHO/3dgs/blob/main/docs/stages/stage9.md">Stage 9 — Native CUDA SH0 training ↗</a><span>Initialization, supervision, maintenance, image corrections, evaluation, and limitations.</span></li><li id="ref-2"><a href="https://github.com/NIZAHO/3dgs/blob/main/docs/stages/stage10.md">Stage 10 — SOG &amp; SuperSplat delivery ↗</a><span>Model encoding, coordinate conversion, browser checks, and publishing boundaries.</span></li><li id="ref-3"><a href="https://github.com/NIZAHO/3dgs/blob/main/experiments/pipelines/20261002_133957_fresh/README.md">133957 — Full-pipeline completion record ↗</a><span>Source of every run count, size, runtime, and score on this page.</span></li><li id="ref-4"><a href="https://github.com/NIZAHO/3dgs/blob/main/README.md">Project overview &amp; stage contracts ↗</a><span>Sensor preparation and visual–LiDAR geometry before Gaussian training.</span></li><li id="ref-5"><a href="https://github.com/NIZAHO/3dgs/blob/main/src/gs/native/PROVENANCE.json">Native backend provenance ↗</a><span>Upstream revision 39578a0; reused components and project modifications.</span></li></ol><p class="fine">Publication components: <a href="https://github.com/playcanvas/splat-transform">splat-transform</a> and <a href="https://github.com/playcanvas/supersplat-viewer">SuperSplat Viewer</a>. Editorial inspiration: <a href="https://stellaludai.github.io/Mem2Gen/">Mem2Gen</a>. Original page code and vector illustrations.</p></div></section>
+
+<!-- ============================================================== REFERENCES -->
+<section class="section col resources" id="references" aria-labelledby="h-refs">
+<p class="eyebrow"><span class="num">—</span>References</p>
+<h2 id="h-refs">Sources</h2>
+<ol class="references">
+<li id="ref-1">Kerbl, Kopanas, Leimkühler, Drettakis. <a href="https://github.com/graphdeco-inria/gaussian-splatting">3D Gaussian Splatting for Real-Time Radiance Field Rendering</a>. ACM TOG (SIGGRAPH) 2023.</li>
+<li id="ref-2">Tao et al. The Oxford Spires Dataset: Benchmarking Large-Scale LiDAR-Visual Localisation, Reconstruction and Radiance Field Methods. IJRR 2025.</li>
+<li id="ref-3">Liao et al. <a href="https://arxiv.org/abs/2409.04751">Fisheye-GS: Lightweight and Extensible Gaussian Splatting Module for Fisheye Cameras</a>. arXiv 2024.</li>
+<li id="ref-4">Wu et al. <a href="https://openaccess.thecvf.com/content/CVPR2025/html/Wu_3DGUT_Enabling_Distorted_Cameras_and_Secondary_Rays_in_Gaussian_Splatting_CVPR_2025_paper.html">3DGUT: Enabling Distorted Cameras and Secondary Rays in Gaussian Splatting</a>. CVPR 2025.</li>
+<li id="ref-5">Yang et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Yang_DirectFisheye-GS_Enabling_Native_Fisheye_Input_in_Gaussian_Splatting_with_Cross-View_CVPR_2026_paper.html">DirectFisheye-GS: Enabling Native Fisheye Input in Gaussian Splatting with Cross-View Joint Optimization</a>. CVPR 2026.</li>
+<li id="ref-6">Huang et al. 3DGEER: 3D Gaussian Rendering Made Exact and Efficient for Generic Cameras. ICLR 2026.</li>
+<li id="ref-7">Moënne-Loccoz et al. 3D Gaussian Ray Tracing: Fast Tracing of Particle Scenes. ACM TOG (SIGGRAPH Asia) 2024.</li>
+<li id="ref-8">Zwicker, Pfister, van Baar, Gross. EWA Volume Splatting. IEEE Visualization 2001.</li>
+<li id="ref-9">Huang et al. On the Error Analysis of 3D Gaussian Splatting and an Optimal Projection Strategy. ECCV 2024.</li>
+<li id="ref-10">Moravec, Elfes. High Resolution Maps from Wide Angle Sonar. ICRA 1985.</li>
+<li id="ref-11">Newcombe et al. KinectFusion: Real-time Dense Surface Mapping and Tracking. ISMAR 2011.</li>
+<li id="ref-12">Mildenhall et al. NeRF: Representing Scenes as Neural Radiance Fields for View Synthesis. ECCV 2020.</li>
+<li id="ref-13">Hess et al. <a href="https://openaccess.thecvf.com/content/CVPR2025/html/Hess_SplatAD_Real-Time_Lidar_and_Camera_Rendering_with_3D_Gaussian_Splatting_CVPR_2025_paper.html">SplatAD: Real-Time Lidar and Camera Rendering with 3D Gaussian Splatting for Autonomous Driving</a>. CVPR 2025.</li>
+<li id="ref-14">Yuan et al. <a href="https://arxiv.org/abs/2503.08317">Uni-Gaussians: Unifying Camera and Lidar Simulation with Gaussians for Dynamic Driving Scenarios</a>. arXiv 2025.</li>
+<li id="ref-15">Patakin et al. <a href="https://arxiv.org/abs/2602.05617">Unified Sensor Simulation for Autonomous Driving (XSIM)</a>. arXiv 2026.</li>
+<li id="ref-16">Ren et al. <a href="https://arxiv.org/abs/2411.15355">UniGaussian: Driving Scene Reconstruction from Multiple Camera Models via Unified Gaussian Representations</a>. arXiv 2024.</li>
+<li id="ref-17">Turki et al. SimULi: Real-Time LiDAR and Camera Simulation with Unscented Transforms. ICLR 2026.</li>
+<li id="ref-18">Huang, Yu, Chen, Geiger, Gao. <a href="https://surfsplatting.github.io/">2D Gaussian Splatting for Geometrically Accurate Radiance Fields</a>. SIGGRAPH 2024.</li>
+<li id="ref-19">Jiang et al. <a href="https://proceedings.iclr.cc/paper_files/paper/2025/hash/8e86fd925dda476f574689f4ce748193-Abstract-Conference.html">GS-LiDAR: Generating Realistic LiDAR Point Clouds with Panoramic Gaussian Splatting</a>. ICLR 2025.</li>
+<li id="ref-20">Zhang et al. <a href="https://arxiv.org/abs/2601.17835">Geometry-Grounded Gaussian Splatting</a>. arXiv 2026.</li>
+<li id="ref-21">Deng, Liu, Zhu, Ramanan. Depth-supervised NeRF: Fewer Views and Faster Training for Free. CVPR 2022.</li>
+<li id="ref-22">Rematas et al. Urban Radiance Fields. CVPR 2022.</li>
+<li id="ref-23">Chen et al. <a href="https://arxiv.org/abs/2406.06521">PGSR: Planar-Based Gaussian Splatting for Efficient and High-Fidelity Surface Reconstruction</a>. IEEE TVCG 2024.</li>
+<li id="ref-24">Barron et al. Mip-NeRF 360: Unbounded Anti-Aliased Neural Radiance Fields. CVPR 2022.</li>
+<li id="ref-25">Das, Dennis. A Closer Look at Drawbacks of Minimizing Weighted Sums of Objectives for Pareto Set Generation in Multicriteria Optimization Problems. Structural Optimization 1997.</li>
+<li id="ref-26">Song et al. <a href="https://proceedings.mlr.press/v306/song26b.html">EnerGS: Energy-Based Gaussian Splatting with Partial Geometric Priors</a>. ICML 2026.</li>
+<li id="ref-27">Kwak et al. <a href="https://arxiv.org/abs/2606.20103">Geometry-Preserving in 3D Gaussian Splatting for LiDAR-Camera Extrinsic Calibration</a>. ECCV 2026 (accepted manuscript).</li>
+<li id="ref-28">Peng et al. A Constrained Optimization Approach for Gaussian Splatting from Coarsely-posed Images and Noisy LiDAR Point Clouds. ICCV 2025.</li>
+<li id="ref-29">Mallick et al. Taming 3DGS: High-Quality Radiance Fields with Limited Resources. SIGGRAPH Asia 2024.</li>
+<li id="ref-30">Hahlbohm et al. <a href="https://openaccess.thecvf.com/content/CVPR2026/html/Hahlbohm_Faster-GS_Analyzing_and_Improving_Gaussian_Splatting_Optimization_CVPR_2026_paper.html">Faster-GS: Analyzing and Improving Gaussian Splatting Optimization</a>. CVPR 2026.</li>
+<li id="ref-31">Radl et al. StopThePop: Sorted Gaussian Splatting for View-Consistent Real-time Rendering. ACM TOG (SIGGRAPH) 2024.</li>
+<li id="ref-32">Ye et al. <a href="https://www.jmlr.org/papers/v26/24-1476.html">gsplat: An Open-Source Library for Gaussian Splatting</a>. JMLR 2025.</li>
+<li id="ref-33">Zhang et al. <a href="https://researchportal.hkust.edu.hk/en/publications/rade-gs-rasterizing-depth-in-gaussian-splatting/">RaDe-GS: Rasterizing Depth in Gaussian Splatting</a>. ACM TOG 2026.</li>
+<li id="ref-34">Yu, Sattler, Geiger. Gaussian Opacity Fields: Efficient Adaptive Surface Reconstruction in Unbounded Scenes. ACM TOG (SIGGRAPH Asia) 2024.</li>
+</ol>
+<h3 class="subhead">Project sources</h3>
+<ol class="references project-refs">
+<li id="ref-p1"><a href="https://github.com/NIZAHO/3dgs/blob/main/docs/stages/stage9.md">Stage 9 — native CUDA SH0 training ↗</a><span>Initialisation, paired supervision, maintenance, image corrections and limitations.</span></li>
+<li id="ref-p2"><a href="https://github.com/NIZAHO/3dgs/blob/main/docs/stages/stage10.md">Stage 10 — SOG &amp; SuperSplat delivery ↗</a><span>Encoding, coordinate conversion and publishing boundaries.</span></li>
+<li id="ref-p3"><a href="https://github.com/NIZAHO/3dgs/blob/main/experiments/pipelines/20261002_133957_fresh/README.md">Run 133957 — full-pipeline completion record ↗</a><span>Source of every run count, size, runtime and score in §07.</span></li>
+<li id="ref-p4"><a href="https://github.com/NIZAHO/3dgs/blob/main/README.md">Project overview &amp; stage contracts ↗</a><span>Sensor preparation and visual–LiDAR geometry before Gaussian training.</span></li>
+<li id="ref-p5"><a href="https://github.com/NIZAHO/3dgs/blob/main/main.tex">Paper draft, “No Pinhole Proxies” ↗</a><span>Method, protocol and placeholders; every result is still pending.</span></li>
+<li id="ref-p6"><a href="https://github.com/NIZAHO/3dgs/tree/main/paper/paper_claude_zh">Research plan, contributions and validation plan ↗</a><span>Causal chain, prior-art checks, kill criteria and code-level evidence.</span></li>
+</ol>
+<p class="fine">The project repository may require access; this page is public. The native training backend reuses a pinned <code>3dgs_CUDA</code> revision, documented in its provenance file. Viewer runtime: <a href="https://github.com/playcanvas/supersplat-viewer">SuperSplat Viewer</a>. Math typesetting: KaTeX, self-hosted. Editorial pacing inspired by <a href="https://stellaludai.github.io/Mem2Gen/">Mem2Gen</a>; page code and figures are original.</p>
+</section>
 </main>
-<footer><a class="brand" href="#top">3dgs</a><span>Chuan project · Native SH0 Gaussian training &amp; browser delivery.</span><a href="#top">Back to top ↑</a></footer>
-<noscript><p class="prose fine">Project text, the overview diagram, and recorded results remain readable without JavaScript. Interactive illustration controls require JavaScript.</p></noscript>
+<footer><a class="brand" href="#top">3dgs</a><span>No Pinhole Proxies · research preview, validation phase. Hypotheses, not results.</span><a href="#top">Back to top ↑</a></footer>
+<noscript><p class="col fine">The text, equations in TeX form, tables and the overview diagram remain readable without JavaScript. Interactive figures, typeset equations and the scene viewer require JavaScript.</p></noscript>
+<script src="./vendor/katex/katex.min.js?v=gs-story-1" defer></script>
 <script src="./app.js?v=gs-story-1" defer></script>
 <script type="module" src="./scene-browser.js?v=ply-viewer-1"></script>
 </body></html>
