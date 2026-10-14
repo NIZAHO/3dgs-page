@@ -1,8 +1,8 @@
-# Chuan project page
+# No Pinhole Proxies — project page
 
-Website-only publication repository for Chuan. Project source remains in the private NIZAHO/3dgs repository.
+Website-only publication repository.
 
-The website presents the research preview "No Pinhole Proxies" (diagnosis, three contributions with their math, validation plan), the baseline system with one recorded run, and an embedded Gaussian scene viewer. It shows hypotheses, not results; see `website/CONTENT_SOURCES.md`.
+The website presents "No Pinhole Proxies" in English and Chinese: the diagnosis, the pipeline, three contributions with their math and related work, the experiments, and an embedded Gaussian scene viewer. See `website/CONTENT_SOURCES.md` for provenance and `CLAUDE.md` for content rules.
 
 Edit website/ on main to deploy automatically to GitHub Pages. In Settings → Pages, select GitHub Actions as the source once.
 

@@ -298,6 +298,14 @@ footer>a:last-child{white-space:nowrap}
 .callout--faq{--rule:var(--orange);background:var(--orange-wash)}
 .callout--faq .callout-label{font-size:13px!important;letter-spacing:0!important;text-transform:none!important;color:var(--ink)!important}
 
+.subhead.rw{border-top:1px solid var(--line);padding-top:30px;margin-top:52px}
+.callout--vs{--rule:var(--violet)}
+.callout--vs p:not(.callout-label){font:16.5px/1.65 var(--serif);color:var(--ink)}
+:root[data-lang=zh] .callout--vs p:not(.callout-label){font:16px/1.8 var(--sans)}
+.callout--vs .callout-label{font-size:12px!important;letter-spacing:.04em!important;text-transform:none!important}
+.matrix.c2t{min-width:860px}
+.matrix.c2t td{text-align:left;font-size:13px;line-height:1.5}
+
 /* pipeline figure */
 .pipe .scroll-x{background:var(--surface)}
 #pipe-svg{display:block;width:100%;height:auto}

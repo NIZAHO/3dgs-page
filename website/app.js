@@ -121,7 +121,7 @@ function segmented(container, attr, onSelect) {
     el('path', {d: wedge(oc, 45, 470), style: 'fill:var(--blue);fill-opacity:.07;stroke:var(--blue);stroke-opacity:.45;stroke-dasharray:5 4'}, proxy);
     text(proxy, 372, 108, T('perspective crop · 90°', '透视裁切 · 90°'), 't-small', {style: 'fill:var(--blue)'});
     el('path', {d: wedge(ol, 60, 330), style: 'fill:none;stroke:var(--orange);stroke-opacity:.75;stroke-dasharray:2 4;stroke-width:1.4'}, proxy);
-    text(proxy, 300, 452, T('virtual depth camera · 120°, 256²', '虚拟深度相机 · 120°，256²'), 't-small', {style: 'fill:var(--orange)'});
+    text(proxy, 300, 452, T('virtual depth camera', '虚拟深度相机'), 't-small', {style: 'fill:var(--orange)'});
     const wallG = [];
     for (let i = 0; i < 7; i++) { const s = 0.06 + i * 0.147; wallG.push([W0[0] + e[0] * s, W0[1] + e[1] * s]); }
     const F = [500, 257], P = [262, 418];
@@ -185,7 +185,7 @@ function segmented(container, attr, onSelect) {
     text(gate, 905, 180, T('not lift off', '不能被拉离'), 't-small', {'text-anchor': 'middle', style: 'fill:var(--violet)'});
   }
   const copy = {
-    proxy: {k: ['Baseline R1', '基线 R1'], t: ['Two sensors, two stand-ins, three depths.', '两个传感器，两个替身，三种深度。'],
+    proxy: {k: ['Common practice', '常见做法'], t: ['Two sensors, two stand-ins, three depths.', '两个传感器，两个替身，三种深度。'],
       p: ['The fisheye is cut into a perspective crop, so off-axis pixels are never supervised. The LiDAR becomes a virtual pinhole depth camera. On one beam, ① the LiDAR loss sees a weighted average of centre depths, ② the camera branch is pulled toward a median, and ③ evaluation takes yet another first surface. None of them is the measured distance ρ.',
           '鱼眼图被切成透视小图，边缘像素根本没被监督；激光雷达被换成一台虚拟针孔深度相机。同一条光束上，① 激光损失看到的是中心深度的加权平均，② 相机分支被拉向一个中位深度，③ 评估时又取了另一个“第一表面”。没有一个等于激光实际量到的距离 ρ。'],
       l: [['var(--blue)', 'camera pixel ray', '相机像素射线'], ['var(--orange)', 'LiDAR beam and its measured return ρ', '激光束及其实测回波 ρ'], ['color-mix(in srgb,var(--blue) 20%,transparent)', 'perspective crop used for training', '训练用的透视裁切'], ['transparent;border:1.5px dashed var(--orange)', 'virtual pinhole depth camera', '虚拟针孔深度相机']]},
@@ -250,8 +250,8 @@ function segmented(container, attr, onSelect) {
     text(dyn, X(zc) - 8, cy + 4, T('wall centre', '墙面高斯中心'), 'w-tick', {'text-anchor': 'end'});
     const ms = [
       {x: rho, label: T('ρ measured', 'ρ 实测'), style: 'stroke:var(--orange);stroke-width:2.2', fill: 'var(--orange)'},
-      {x: E, label: T('R1 average', 'R1 平均'), style: 'stroke:var(--text);stroke-width:1.6;stroke-dasharray:5 4', fill: 'var(--text)'},
-      {x: Med, label: T('R1 median', 'R1 中位'), style: 'stroke:var(--text);stroke-width:1.6;stroke-dasharray:1.5 3', fill: 'var(--text)'},
+      {x: E, label: T('stand-in average', '替身平均'), style: 'stroke:var(--text);stroke-width:1.6;stroke-dasharray:5 4', fill: 'var(--text)'},
+      {x: Med, label: T('stand-in median', '替身中位'), style: 'stroke:var(--text);stroke-width:1.6;stroke-dasharray:1.5 3', fill: 'var(--text)'},
       {x: term, label: 'τ_term', style: 'stroke:var(--violet);stroke-width:2.6', fill: 'var(--violet)'}
     ].sort((a, b) => a.x - b.x);
     const rowsX = [-1e9, -1e9, -1e9];
@@ -264,8 +264,8 @@ function segmented(container, attr, onSelect) {
     }
     const rows = [
       ['var(--orange)', T('ρ, measured return', 'ρ，实测回波'), rho, null, false],
-      ['var(--text)', T('R1 average of centre depths', 'R1 中心深度加权平均'), E, E - rho, false],
-      ['var(--text)', T('R1 median (a centre depth)', 'R1 中位（也是中心深度）'), Med, Med - rho, false],
+      ['var(--text)', T('stand-in: average of centre depths', '替身：中心深度加权平均'), E, E - rho, false],
+      ['var(--text)', T('stand-in: median (a centre depth)', '替身：中位（也是中心深度）'), Med, Med - rho, false],
       ['var(--violet)', T('τ_term, ray model', 'τ_term，射线模型'), term, term - rho, true]
     ];
     const tb = $('#depth-readout'); tb.replaceChildren();
@@ -298,30 +298,30 @@ function segmented(container, attr, onSelect) {
     in_cam: {ours: [['Fisheye images', '3 cameras, full circle'], ['鱼眼图像', '3 台相机，完整成像圆']]},
     in_pose: {ours: [['Poses & calibration', 'given and fixed'], ['位姿与标定', '给定，保持不变']]},
     in_lid: {ours: [['LiDAR sweeps', 'one range per beam'], ['激光扫描', '每条光束一个测距']]},
-    ray_cam: {ours: [['Pixel rays (o, d)', 'every pixel, no crop'], ['像素射线 (o, d)', '每个像素，不裁切']], base: [['Perspective crops', '3 × 90° pinhole views', 'image rim is lost'], ['透视裁切', '3 张 90° 针孔视图', '图像边缘丢失']]},
-    ray_lid: {ours: [['Beam rays (oₖ, dₖ)', 'range ρₖ per beam', 'own origin per return'], ['光束射线 (oₖ, dₖ)', '每条光束的测距 ρₖ', '每个回波自己的原点']], base: [['Virtual depth camera', 'pinhole, 120°, 256²'], ['虚拟深度相机', '针孔，120°，256²']]},
+    ray_cam: {ours: [['Pixel rays (o, d)', 'every pixel, no crop'], ['像素射线 (o, d)', '每个像素，不裁切']], base: [['Perspective crops', 'pinhole views of the fisheye', 'image rim is lost'], ['透视裁切', '鱼眼图切成针孔视图', '图像边缘丢失']]},
+    ray_lid: {ours: [['Beam rays (oₖ, dₖ)', 'range ρₖ per beam', 'own origin per return'], ['光束射线 (oₖ, dₖ)', '每条光束的测距 ρₖ', '每个回波自己的原点']], base: [['Virtual depth camera', 'pinhole, at the LiDAR origin'], ['虚拟深度相机', '针孔，放在激光原点']]},
     render: {ours: [['One renderer', 'exact ray–Gaussian response', 'tile rasteriser, no BVH', 'outputs colour C and', 'stopping depth τ_term,', 'same rule for both sensors'], ['同一个渲染器', '精确的射线–高斯响应', 'tile 光栅，不建 BVH', '输出颜色 C', '和停止深度 τ_term，', '两种传感器同一规则']],
       base: [['Two sets of rules', 'EWA projection (approximate)', 'camera depth: a median', 'laser depth: a weighted', 'average of centre depths'], ['两套规则', 'EWA 投影（近似）', '相机深度：中位数', '激光深度：中心深度', '的加权平均']]},
     gauss: {ours: [['One set of 3D Gaussians', 'shared by both sensors'], ['同一套 3D 高斯', '两种传感器共用']], base: [['One set of 3D Gaussians', 'pulled by 3 different depths'], ['同一套 3D 高斯', '被 3 种深度来回拉扯']]},
     loss_cam: {ours: [['Image loss', 'rendered colour vs photo'], ['图像损失', '渲染颜色 vs 照片']], base: [['Image loss + depth pull', 'depth pulled to the median'], ['图像损失 + 深度牵引', '深度被拉向中位数']]},
     loss_lid: {ours: [['Laser loss', 'τ_term vs ρ, + empty space'], ['激光损失', 'τ_term vs ρ，+ 空域']], base: [['Laser loss', 'weighted centre depth vs z'], ['激光损失', '加权中心深度 vs z']]},
     record: {ours: [['Per-Gaussian record', 'hit · blocked · seen', '→ anchored · blocking · unseen'], ['逐高斯记账', '命中 · 挡路 · 照到', '→ 锚定 · 挡路 · 未测到']], base: [['No per-Gaussian record', 'nothing tracks what', 'the laser measured'], ['没有逐高斯记账', '没人记录激光', '测到了什么']]},
-    update: {ours: [['Anchored update', 'anchored: slide, not lift off', 'blocking: removed · unseen: free'], ['锚定更新', '锚定：可滑动，不可拉离', '挡路：删除 · 未测到：照常']], base: [['Plain weighted update', 'images may move anything', 'no push along the beam'], ['普通加权更新', '图像什么都能挪', '无法沿光束推']]},
+    update: {ours: [['Anchored update', 'anchored: slide, not lift off', 'blocking: removed · unseen: free'], ['锚定更新', '锚定：可滑动，不可拉离', '挡路：删除 · 未测到：照常']], base: [['Plain weighted update', 'images may move anything', 'corrections off the beam'], ['普通加权更新', '图像什么都能挪', '修正方向偏离光束']]},
     out: {ours: [['Output', 'the same Gaussians →', 'PLY → SOG → browser'], ['输出', '同一套高斯 →', 'PLY → SOG → 浏览器']]}
   };
   const N = {
     in_cam: {ours: ['Raw fisheye images from three cameras. Every pixel inside the image circle is used at its native resolution.', '三台相机的原始鱼眼图像。成像圆内的每个像素都以原生分辨率使用。'], base: ['Raw fisheye images from three cameras.', '三台相机的原始鱼眼图像。']},
     in_pose: {ours: ['Poses and calibration are given and kept fixed, so differences come from the model, not from re-fitting poses.', '位姿和标定都是给定且固定的，所以差异来自模型本身，而不是重新拟合位姿。']},
     in_lid: {ours: ['Each LiDAR return is one measured distance along one beam.', '每个激光回波都是沿一条光束量到的一个距离。']},
-    ray_cam: {ours: ['C1 · Each pixel becomes a ray: it starts at the camera centre and points where the calibrated fisheye model says. No perspective crop.', 'C1 · 每个像素变成一条射线：从相机中心出发，方向由标定好的鱼眼模型给出。不做透视裁切。'], base: ['Today · Each fisheye image is cut into three 90° pinhole views. Pixels near the rim are lost, and projection uses the approximate EWA formula.', '现状 · 每张鱼眼图被切成三张 90° 针孔视图。边缘像素丢失，投影用近似的 EWA 公式。']},
-    ray_lid: {ours: ['C1 · Each return becomes a ray with its own origin (taken at the return’s own timestamp), its direction and its measured distance ρ.', 'C1 · 每个回波变成一条射线：自己的原点（取该回波的时刻）、方向和实测距离 ρ。'], base: ['Today · The LiDAR is replaced by a virtual pinhole depth camera with a 120° view and 256 × 256 queries.', '现状 · 激光雷达被换成一台视场 120°、256 × 256 个查询的虚拟针孔深度相机。']},
-    render: {ours: ['C1 + C3 · One exact formula turns each Gaussian into opacity along any ray. The same rule gives a pixel’s colour and the stopping depth τ_term of pixels and beams alike. It runs inside the existing tile rasteriser.', 'C1 + C3 · 同一个精确公式，把每个高斯沿任意射线变成不透明度。同一条规则给出像素的颜色，以及像素和光束共同的停止深度 τ_term。它跑在现有的 tile 光栅器里。'], base: ['Today · The camera side regularises toward a median depth, while the laser side uses a weighted average of Gaussian centre depths: two rules for one scene.', '现状 · 相机一侧向中位深度做正则，激光一侧用高斯中心深度的加权平均：同一个场景，两套规则。']},
+    ray_cam: {ours: ['C1 · Each pixel becomes a ray: it starts at the camera centre and points where the calibrated fisheye model says. No perspective crop.', 'C1 · 每个像素变成一条射线：从相机中心出发，方向由标定好的鱼眼模型给出。不做透视裁切。'], base: ['Stand-ins · Each fisheye image is cut into pinhole views. Pixels near the rim are lost, and projection uses the approximate EWA formula.', '替身做法 · 每张鱼眼图被切成针孔视图。边缘像素丢失，投影用近似的 EWA 公式。']},
+    ray_lid: {ours: ['C1 · Each return becomes a ray with its own origin (taken at the return’s own timestamp), its direction and its measured distance ρ.', 'C1 · 每个回波变成一条射线：自己的原点（取该回波的时刻）、方向和实测距离 ρ。'], base: ['Stand-ins · The LiDAR is replaced by a virtual pinhole depth camera placed at its origin.', '替身做法 · 激光雷达被换成放在它原点的一台虚拟针孔深度相机。']},
+    render: {ours: ['C1 + C3 · One exact formula turns each Gaussian into opacity along any ray. The same rule gives a pixel’s colour and the stopping depth τ_term of pixels and beams alike. It runs inside the existing tile rasteriser.', 'C1 + C3 · 同一个精确公式，把每个高斯沿任意射线变成不透明度。同一条规则给出像素的颜色，以及像素和光束共同的停止深度 τ_term。它跑在现有的 tile 光栅器里。'], base: ['Stand-ins · The camera side regularises toward a median depth, while the laser side uses a weighted average of Gaussian centre depths: two rules for one scene.', '替身做法 · 相机一侧向中位深度做正则，激光一侧用高斯中心深度的加权平均：同一个场景，两套规则。']},
     gauss: {ours: ['One set of 3D Gaussians shared by both sensors: no second set, no second opacity.', '两种传感器共用的一套 3D 高斯：没有第二套，也没有第二个不透明度。'], base: ['The same Gaussians are pulled by three different notions of depth, and appearance absorbs the conflict.', '同一批高斯被三种不同的“深度”来回拉扯，矛盾最后被外观吸收。']},
     loss_cam: {ours: ['The usual colour loss against the photo. No camera depth loss is needed: the laser already shapes the surface the camera sees.', '通常的颜色损失，对照照片。不需要相机深度损失：相机看到的表面已由激光塑造。'], base: ['A colour loss, plus a term pulling the camera’s expected depth toward the median depth.', '颜色损失，外加一项把相机的期望深度拉向中位深度。']},
-    loss_lid: {ours: ['C1 · The beam should stop at its measured distance ρ, and the space before ρ should be empty.', 'C1 · 光束应当停在实测距离 ρ 处，ρ 之前的空间应当是空的。'], base: ['Today · Compares a weighted centre depth with the measured depth; no gradient can push a Gaussian along the beam.', '现状 · 用加权中心深度对照实测深度；没有梯度能沿光束推动高斯。']},
-    record: {ours: ['C2 · In the same laser pass, each Gaussian counts how often it was hit, how often it blocked a beam and how often it was seen. The counts give it a label: anchored, blocking or unseen.', 'C2 · 在同一趟激光渲染里，每个高斯统计自己被命中、挡路、被照到的次数，由此得到标签：锚定、挡路或未测到。'], base: ['Today · Nothing records which Gaussians the laser actually measured.', '现状 · 没有任何东西记录激光真正测到了哪些高斯。']},
-    update: {ours: ['C2 · Images may slide an anchored Gaussian along the surface but not lift it off; blocking Gaussians fade and are removed; unseen ones are optimised as usual.', 'C2 · 图像可以让锚定的高斯沿表面滑动，但不能把它拉离表面；挡路的高斯逐渐变淡并被删除；未测到的照常优化。'], base: ['Today · A plain weighted update: image fitting may move any Gaussian in any direction.', '现状 · 普通的加权更新：图像拟合可以把任何高斯往任何方向挪。']},
-    out: {ours: ['After training, the same Gaussians are exported as PLY, compressed to SOG and viewed in the browser (§09).', '训练结束后，同一套高斯导出为 PLY，压缩为 SOG，在浏览器里查看（§09）。']}
+    loss_lid: {ours: ['C1 · The beam should stop at its measured distance ρ, and the space before ρ should be empty.', 'C1 · 光束应当停在实测距离 ρ 处，ρ 之前的空间应当是空的。'], base: ['Stand-ins · Compares a weighted centre depth with the measured depth; corrections move centres along the camera axis, not along the beam.', '替身做法 · 用加权中心深度对照实测深度；修正沿相机光轴移动中心，而不是沿光束。']},
+    record: {ours: ['C2 · In the same laser pass, each Gaussian counts how often it was hit, how often it blocked a beam and how often it was seen. The counts give it a label: anchored, blocking or unseen.', 'C2 · 在同一趟激光渲染里，每个高斯统计自己被命中、挡路、被照到的次数，由此得到标签：锚定、挡路或未测到。'], base: ['Stand-ins · Nothing records which Gaussians the laser actually measured.', '替身做法 · 没有任何东西记录激光真正测到了哪些高斯。']},
+    update: {ours: ['C2 · Images may slide an anchored Gaussian along the surface but not lift it off; blocking Gaussians fade and are removed; unseen ones are optimised as usual.', 'C2 · 图像可以让锚定的高斯沿表面滑动，但不能把它拉离表面；挡路的高斯逐渐变淡并被删除；未测到的照常优化。'], base: ['Stand-ins · A plain weighted update: image fitting may move any Gaussian in any direction.', '替身做法 · 普通的加权更新：图像拟合可以把任何高斯往任何方向挪。']},
+    out: {ours: ['After training, the same Gaussians are exported as PLY, compressed to SOG and viewed in the browser (§08).', '训练结束后，同一套高斯导出为 PLY，压缩为 SOG，在浏览器里查看（§08）。']}
   };
   const pick = (obj) => obj[mode] || obj.ours;
   function drawEdge(g, pts, color, opts = {}) {
@@ -367,7 +367,7 @@ function segmented(container, attr, onSelect) {
     const band = el('g', {}, svg);
     el('rect', {x: 16, y: 536, width: 1090, height: 32, rx: 8, style: 'fill:var(--surface-2);stroke:var(--line)'}, band);
     if (ours) { el('rect', {x: 26, y: 543, width: 28, height: 17, rx: 8.5, style: 'fill:var(--ink)'}, band); text(band, 40, 555, 'C3', 'pn-badge', {'text-anchor': 'middle'}); }
-    text(band, ours ? 64 : 28, 556, ours ? T('Everything above runs inside the existing tile rasteriser: binning · sorting · visible-only Adam · GPU-resident storage, all kept unchanged.', '以上全部跑在现有的 tile 光栅器里：分箱 · 排序 · 只更新可见高斯的 Adam · GPU 常驻存储，全部保留。') : T('The same fast trainer: binning · sorting · visible-only Adam · GPU-resident storage.', '同一个高速训练器：分箱 · 排序 · 只更新可见高斯的 Adam · GPU 常驻存储。'), 'pn-s', {style: 'fill:var(--text)'});
+    text(band, ours ? 64 : 28, 556, ours ? T('Everything above runs inside the existing tile rasteriser: binning · sorting · visible-only Adam · GPU-resident storage, all kept unchanged.', '以上全部跑在现有的 tile 光栅器里：分箱 · 排序 · 只更新可见高斯的 Adam · GPU 常驻存储，全部保留。') : T('A fast tile rasteriser: binning · sorting · visible-only Adam · GPU-resident storage.', '高速 tile 光栅器：分箱 · 排序 · 只更新可见高斯的 Adam · GPU 常驻存储。'), 'pn-s', {style: 'fill:var(--text)'});
     note();
   }
   function note() {
